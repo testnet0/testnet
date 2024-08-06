@@ -1,0 +1,18 @@
+services:
+ testnet-client:
+    image: ${IMAGE_PREFIX}/testnet_client:latest
+    container_name: testnet-client
+    volumes:
+      - ./client_data/tools:/testnet-client/tools
+      - ./client_data/results:/testnet-client/results
+    environment:
+      - MYSQL_URL=jdbc:mysql://${IP}:33306/jeecg-boot?characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - REDIS_HOST=${IP}
+      - REDIS_PORT=36379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - TESTNET_CLIENT_VERSION=V1.2
+      - TESTNET_RESULT_PATH=/testnet-client/results/
+      - TESTNET_CLIENT_NAME=${CLIENT_NAME}
+    restart: always
