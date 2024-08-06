@@ -21,9 +21,9 @@ confirm() {
     [[ "$opt" == $'\n' ]] || echo
 
     case "$opt" in
-        'y' | 'Y' ) return 0;;
-        'n' | 'N' ) return 1;;
-        *) confirm "$1";;
+    'y' | 'Y') return 0 ;;
+    'n' | 'N') return 1 ;;
+    *) confirm "$1" ;;
     esac
 }
 
@@ -64,8 +64,8 @@ check_depend() {
             abort "中止安装"
         fi
     fi
-    info "发现 Docker 环境: '`command -v docker`'"
-    docker version > /dev/null 2>&1
+    info "发现 Docker 环境: '$(command -v docker)'"
+    docker version >/dev/null 2>&1
     if [ $? -ne "0" ]; then
         abort "Docker 服务工作异常"
     fi
@@ -82,7 +82,7 @@ check_depend() {
     fi
 
     # check docker compose support -d
-    if ! $compose_command up -d --help > /dev/null 2>&1; then
+    if ! $compose_command up -d --help >/dev/null 2>&1; then
         warning "Docker Compose Plugin 不支持 '-d' 参数"
         if confirm "是否需要自动升级 Docker Compose Plugin"; then
             install_docker_compose
@@ -107,7 +107,7 @@ get_average_delay() {
 
     for ((i = 0; i < iterations; i++)); do
         # check timeout
-        if ! curl -o /dev/null -m 1 -s -w "%{http_code}\n" "$source" > /dev/null; then
+        if ! curl -o /dev/null -m 1 -s -w "%{http_code}\n" "$source" >/dev/null; then
             delay=999
         else
             delay=$(curl -o /dev/null -s -w "%{time_total}\n" "$source")
@@ -138,7 +138,7 @@ install_docker() {
     for source in "${sources[@]}"; do
         average_delay=$(get_average_delay "$source")
         echo "source: $source, delay: $average_delay"
-        if (( $(awk 'BEGIN { print '"$average_delay"' < '"$min_delay"' }') )); then
+        if (($(awk 'BEGIN { print '"$average_delay"' < '"$min_delay"' }'))); then
             min_delay=$average_delay
             selected_source=$source
         fi
@@ -149,7 +149,7 @@ install_docker() {
     bash get-docker.sh
 
     start_docker
-    docker version > /dev/null 2>&1
+    docker version >/dev/null 2>&1
     if [ $? -ne "0" ]; then
         echo "Docker 安装失败, 请检查网络连接或手动安装 Docker"
         echo "参考文档: https://docs.docker.com/engine/install/"
@@ -158,13 +158,12 @@ install_docker() {
     info "Docker 安装成功"
 }
 
-
 install_docker_compose() {
     DOCKER_COMPOSE_URL="https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)"
     curl -L $DOCKER_COMPOSE_URL -o /usr/local/bin/docker-compose
     chmod +x /usr/local/bin/docker-compose
     ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
-    docker-compose version > /dev/null 2>&1
+    docker-compose version >/dev/null 2>&1
     if [ $? -ne 0 ]; then
         abort "Docker Compose 安装失败"
     fi
@@ -188,13 +187,13 @@ create_env_file() {
             else
                 echo "IMAGE_PREFIX=testnet0" >>".env"
             fi
-            echo "REDIS_PASSWORD=$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 32)" >> .env
-            echo "MYSQL_PASSWORD=$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 32)" >> .env
-            echo "TESTNET_API_TOKEN=$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 32)" >> .env
-            echo "SUBNET_PREFIX=172.16.1" >> .env
-            echo "GPT_ENABLE=false" >> .env
-            echo "GPT_KEY=xxx" >> .env
-            echo "GPT_HOST=https://api.openai.com" >> .env
+            echo "REDIS_PASSWORD=$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 32)" >>.env
+            echo "MYSQL_PASSWORD=$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 32)" >>.env
+            echo "TESTNET_API_TOKEN=$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 32)" >>.env
+            echo "SUBNET_PREFIX=172.16.1" >>.env
+            echo "GPT_ENABLE=false" >>.env
+            echo "GPT_KEY=xxx" >>.env
+            echo "GPT_HOST=https://api.openai.com" >>.env
         fi
     fi
 }
@@ -210,9 +209,9 @@ create_es_data_folder() {
     fi
     chmod 777 ./es_data
     if [ $? -ne 0 ]; then
-       abort "设置 ./es_data 文件夹权限失败"
+        abort "设置 ./es_data 文件夹权限失败"
     else
-       info "成功创建并设置 ./es_data 文件夹"
+        info "成功创建并设置 ./es_data 文件夹"
     fi
 }
 
@@ -226,7 +225,7 @@ update_testnet_server() {
     fi
     # 判断.env是否存在 TESTNET_API_TOKEN
     if ! grep -q '^TESTNET_API_TOKEN=' .env; then
-      echo "TESTNET_API_TOKEN=$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 32)" >> .env
+        echo "TESTNET_API_TOKEN=$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 32)" >>.env
     fi
     $compose_command stop testnet-server testnet-frontend testnet-mysql testnet-redis testnet-es
     $compose_command rm -f testnet-server testnet-frontend testnet-mysql testnet-redis testnet-es
@@ -238,16 +237,23 @@ update_testnet_server() {
 update_testnet_client() {
     info "开始更新 TestNet客户端..."
     if confirm "是否需要更新客户端？已安装工具需要重新安装"; then
-        $compose_command stop testnet-client
-        $compose_command rm -f testnet-client
-        $compose_command pull testnet-client
-        $compose_command up -d testnet-client
+        if grep -q '^IP=' .env; then
+            info "分布式部署方式"
+            docker compose -f docker-compose-client.yml down
+            docker compose -f docker-compose-client.yml pull
+            docker compose -f docker-compose-client.yml up -d
+        else
+            info "单机部署方式"
+            $compose_command stop testnet-client
+            $compose_command rm -f testnet-client
+            $compose_command pull testnet-client
+            $compose_command up -d testnet-client
+        fi
     else
         abort "取消安装运行环境"
     fi
     info "TestNet 客户端更新完成"
 }
-
 start_testnet() {
     create_env_file
     create_es_data_folder
@@ -278,6 +284,12 @@ start_testnet_server() {
 
 start_testnet_client() {
     if [ -f ".env" ]; then
+        if ! grep -q '^IP=' .env; then
+            abort "请先配置IP"
+        fi
+        if ! grep -q '^CLIENT_NAME=' .env; then
+            abort "请先配置IP"
+        fi
         $compose_command -f docker-compose-client.yml up -d
         if [ $? -ne "0" ]; then
             abort "启动 Docker 容器失败，建议查看文档: https://m55giu8f62.feishu.cn/wiki/EjLRwwPdciVKY2kMT8icAzvgnbb"
@@ -290,7 +302,7 @@ start_testnet_client() {
 # 检查容器健康状态
 check_health_status() {
     services=("testnet-mysql" "testnet-redis" "testnet-es")
-    
+
     while true; do
         all_healthy=true
         for service in "${services[@]}"; do
@@ -312,14 +324,14 @@ check_health_status() {
     done
 }
 
-remove_all_containers_and_data(){
-  $compose_command stop testnet-server testnet-frontend testnet-mysql testnet-redis testnet-es testnet-client
-  $compose_command rm -f testnet-server testnet-frontend testnet-mysql testnet-redis testnet-es testnet-client
-  docker images |grep testnet0 |awk '{print $3}' |xargs docker rmi
-  rm -rf ./es_data
-  rm -f .env
-  rm -rf ./mysql_data
-  rm -rf ./client_data
+remove_all_containers_and_data() {
+    $compose_command stop testnet-server testnet-frontend testnet-mysql testnet-redis testnet-es testnet-client
+    $compose_command rm -f testnet-server testnet-frontend testnet-mysql testnet-redis testnet-es testnet-client
+    docker images | grep testnet0 | awk '{print $3}' | xargs docker rmi
+    rm -rf ./es_data
+    rm -f .env
+    rm -rf ./mysql_data
+    rm -rf ./client_data
 }
 
 echo "请选择操作："
@@ -332,28 +344,28 @@ echo "6) 删除所有容器和数据"
 read -p "输入数字选择操作: " user_choice
 
 case $user_choice in
-    1)
-        start_testnet
-        check_health_status
-        ;;
-    2)
-        start_testnet_server
-        check_health_status
-        ;;
-    3)
-        start_testnet_client
-        ;;
-    4)
-        update_testnet_server
-        check_health_status
-        ;;
-    5)
-        update_testnet_client
-        ;;
-    6)
-        remove_all_containers_and_data
-        ;;
-    *)
-        abort "无效选择，退出脚本"
-        ;;
+1)
+    start_testnet
+    check_health_status
+    ;;
+2)
+    start_testnet_server
+    check_health_status
+    ;;
+3)
+    start_testnet_client
+    ;;
+4)
+    update_testnet_server
+    check_health_status
+    ;;
+5)
+    update_testnet_client
+    ;;
+6)
+    remove_all_containers_and_data
+    ;;
+*)
+    abort "无效选择，退出脚本"
+    ;;
 esac
