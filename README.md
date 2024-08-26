@@ -1,78 +1,64 @@
-## TestNet 资产管理系统介绍
-<div align="center">
+# TestNet资产管理系统
 
-简体中文 / [English](./README-en)
+## 目录
+- [产品简介](#产品简介)
+- [功能概览](#功能概览)
+- [安装与配置](#安装与配置)
+- [使用指南](#使用指南)
+- [常见问题](#常见问题)
+- [项目截图](#项目截图)
+- [联系作者](#联系作者)
+- [项目链接](#项目链接)
 
-</div>
+## 产品简介
 TestNet资产管理系统旨在提供全面、高效的互联网资产管理与监控服务，构建详细的资产信息库。该系统能够帮助企业安全团队或渗透测试人员对目标资产进行深入侦察和分析，提供攻击者视角的持续风险监测，协助用户实时掌握资产动态，识别并修复安全漏洞，从而有效收敛攻击面，提升整体安全防护能力。
 
-### 目前功能
+## 功能概览
+目前TestNet资产管理系统支持以下主要功能：
+- **项目管理**：管理多个资产项目。
+- **资产管理**：支持公司、域名、子域名、IP、端口、Web、API、漏洞、资产标签、黑名单等的全面管理。
+- **用户管理**：配置用户权限和访问控制。
+- **资产导入导出**：便捷的资产数据导入与导出功能。
+- **高级搜索**：强大的搜索功能，支持多维度资产搜索。
+- **扫描脚本定制**：支持自定义扫描脚本。
+- **批量扫描&定时任务**：支持批量资产扫描及定时任务配置。
+- **节点配置自定义**：支持节点的灵活配置。
+- **AI助手**：AI智能助手功能，提升代码效率。
 
-- [X] 项目管理
-- [X] 资产管理（公司、域名、子域名、IP、端口、Web、API、漏洞、资产标签、黑名单等）
-- [X] 资产导入导出
-- [X] 高级搜索
-- [X] 扫描脚本定制
-- [X] 批量扫描 & 定时任务
-- [X] 节点配置自定义
+内置工具脚本：
+- **子域名扫描**：OneForAll、subfinder
+- **端口扫描**：nmap、naabu、masscan、Rustscan
+- **Web探测**：httpx
+- **Web指纹识别**：TideFinger、xapp
+- **漏洞扫描**：nuclei、Xpoc、Afrog
+- **Web敏感目录扫描**：DirSearch、ffuf
+- **Web爬虫**：katana
+- **ICP备案查询**
+- **空间搜索引擎**：Fofa、Hunter、Shodan、Quake
 
-**项目自带以下工具，也可以根据需要加入其他工具：**
+## 安装与配置
+请参考[安装指南](https://github.com/testnet0/testnet/wiki/Install)以获取详细的安装步骤和配置方法。
 
-- [X] 子域名扫描（OneForAll、subfinder）
-- [X] 端口扫描（nmap、naabu、masscan、Rustscan）
-- [X] Web探测（httpx）
-- [X] 漏洞扫描（nuclei、Xpoc、Afrog）
-- [X] DNS解析（判断CDN及存活）
-- [X] 敏感目录扫描（DirSearch、ffuf）
-- [X] Web爬虫（katana）
-- [X] ICP备案查询
-- [X] 0.zone 根域名收集
-- [X] 空间搜索引擎（Fofa、Hunter、Shodan、Quake）
+## 使用指南
+1. **快速入门**：参考[快速入门指南](https://github.com/testnet0/testnet/wiki/Quick-Guide)，开始使用TestNet资产管理系统。
+2. **功能使用**：详见[功能使用指南](https://github.com/testnet0/testnet/wiki/Use-Guide)了解各个模块的使用方法。
 
-#### 免责声明
-本工具仅在取得足够合法授权的企业安全建设中使用。用户在使用本工具过程中，应确保所有行为符合当地的法律法规。
+## 常见问题
+在安装或者使用过程中遇到问题？请查看[常见问题解答](https://github.com/testnet0/testnet/wiki/FAQ)获取帮助。
 
-如用户在使用本工具的过程中存在任何非法行为，用户将自行承担所有后果。本工具的所有开发者和贡献者不承担任何法律及连带责任。
+## 项目截图
 
-除非用户已充分阅读、完全理解并接受本协议的所有条款，否则，请勿安装并使用本工具。
-
-用户的使用行为或以其他任何明示或默示方式表示接受本协议的，即视为用户已阅读并同意本协议的约束。
-
-#### 快速开始
-
-### 1、 **安装方式**
-安装前请确保已安装： Git、Docker、Docker Compose。
-不推荐使用kali系统部署，可能会有兼容性问题。
-#### 推荐配置：
-- [X] 单独安装服务端  内存：2G+
-- [X] 安装服务端和客户端   内存：4G+
-### Linux或Mac系统
-Linux和Mac支持通过脚本一键安装，直接运行下面的命令：
-```bash
-git clone https://github.com/testnet0/testnet.git
-cd testnet && bash build.sh
-```
-根据提示选择一键安装或者单独安装，稍等片刻，即可启动系统。
-### Windows系统
-Windows需要手动安装，参考：[TestNet Wiki](https://github.com/testnet0/testnet/wiki)
-### 2、 **访问方式**
-   - 默认访问端口为 `https://IP:8099`
-   - **安全测试**：`TestNet/TestNet123@`
-   - **管理员**：`admin/123456`
-### 3、安装报错
-安装过程有报错建议先查看文档：[常见报错解决](https://github.com/testnet0/testnet/wiki/%E5%B8%B8%E8%A7%81%E6%8A%A5%E9%94%99%E8%A7%A3%E5%86%B3)
-### 3、系统界面
-#### 首页
+### 首页
 ![首页](/doc/img/dashboard.png)
 
-#### 资产管理
+### 资产管理
 ![资产管理](/doc/img/assets.png)
 
-#### 空间引擎
+### 空间引擎
 ![空间引擎](/doc/img/search_engine.png)
 
-### 4、联系作者
-如果你有疑虑或者有优化点，欢迎与我讨论（有沟通群）：
+## 联系作者
+如果你有疑惑或者有优化点，欢迎与我讨论（有沟通群）：
 
 <img src="/doc/img/wechat.png" width="260" height="240" alt="微信群">
 
@@ -80,10 +66,8 @@ Windows需要手动安装，参考：[TestNet Wiki](https://github.com/testnet0/
 
 <img src="/doc/img/qrcode.png" width="260" height="240" alt="赞赏码">
 
-### 项目Wiki
-- [TestNet Wiki](https://github.com/testnet0/testnet/wiki)
-
-### 源码地址
-
-- [前端源码](https://github.com/testnet0/testnet-vue3)
-- [服务端及客户端源码](https://github.com/testnet0/testnet-java)
+## 项目链接
+- **项目地址**: [Github](https://github.com/testnet0/testnet)
+- **后端及客户端源码**: [testnet-java](https://github.com/testnet0/testnet-java)
+- **前端源码**: [testnet-vue3](https://github.com/testnet0/testnet-vue3)
+- **Wiki**: [wiki](https://github.com/testnet0/testnet/wiki)
