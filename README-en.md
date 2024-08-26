@@ -49,8 +49,14 @@ Refer to the help documentation.
 ![](https://raw.githubusercontent.com/testnet0/testnet/main/doc/img/dashboard.png)
 
 ### 4. Contact Us
-- WeChat Group:
-  ![](https://raw.githubusercontent.com/testnet0/testnet/main/doc/img/wechat.png)
+If you have any questions or suggestions, feel free to contact me.
+
+<img src="/doc/img/wechat.png" width="260" height="240" alt="微信群">
+
 ### Detailed Documentation Link
 
-- [TestNet Asset Management System Help Documentation](https://github.com/testnet0/testnet/wiki)
+- [TestNet Wiki](https://github.com/testnet0/testnet/wiki)
+
+### Source Code
+- [Frontend Source Code](https://github.com/testnet0/testnet-vue3)
+- [Backend and Client Source Code](https://github.com/testnet0/testnet-java)
