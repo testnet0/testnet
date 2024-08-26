@@ -60,11 +60,11 @@ TestNet资产管理系统旨在提供全面、高效的互联网资产管理与�
 ## 联系作者
 如果你有疑惑或者有优化点，欢迎与我讨论（有沟通群）：
 
-<img src="/doc/img/wechat.png" width="260" height="240" alt="微信群">
+<img src="/doc/img/wechat.png" width="300" height="300" alt="微信群">
 
 如果此项目能帮助到你，可以赞助作者一杯咖啡，谢谢你的支持！
 
-<img src="/doc/img/qrcode.png" width="260" height="240" alt="赞赏码">
+<img src="/doc/img/qrcode.png" width="300" height="300" alt="赞赏码">
 
 ## 项目链接
 - **项目地址**: [Github](https://github.com/testnet0/testnet)
