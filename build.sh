@@ -73,11 +73,16 @@ check_depend() {
     if $compose_command version; then
         info "发现 Docker Compose Plugin"
     else
-        warning "未发现 Docker Compose Plugin"
-        if confirm "是否需要自动安装 Docker Compose Plugin"; then
-            install_docker_compose
+        compose_command="docker-compose"
+        if $compose_command version; then
+            info "发现 Docker Compose"
         else
+          warning "未发现 Docker Compose Plugin"
+          if confirm "是否需要自动安装 Docker Compose Plugin"; then
+            install_docker_compose
+          else
             abort "中止安装"
+          fi
         fi
     fi
 
