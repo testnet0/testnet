@@ -244,9 +244,9 @@ update_testnet_client() {
     if confirm "是否需要更新客户端？已安装工具需要重新安装"; then
         if grep -q '^IP=' .env; then
             info "分布式部署方式"
-            docker compose -f docker-compose-client.yml down
-            docker compose -f docker-compose-client.yml pull
-            docker compose -f docker-compose-client.yml up -d
+            $compose_command -f docker-compose-client.yml down
+            $compose_command -f docker-compose-client.yml pull
+            $compose_command -f docker-compose-client.yml up -d
         else
             info "单机部署方式"
             $compose_command stop testnet-client
