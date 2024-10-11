@@ -174,7 +174,7 @@ update_testnet_server() {
     info "开始更新 TestNet 服务端..."
     create_env_file
     create_es_data_folder
-    git pull
+    # git pull
     $compose_command down && $compose_command pull && $compose_command up -d || abort "更新失败"
     info "TestNet 服务端更新完成"
 }
