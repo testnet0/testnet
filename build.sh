@@ -4,7 +4,7 @@
 info() { echo -e "\033[37m[TestNet] $*\033[0m"; }
 warning() { echo -e "\033[33m[TestNet] $*\033[0m"; }
 abort() { echo -e "\033[31m[TestNet] $*\033[0m"; echo "
-如果遇到安装问题，建议查看帮助文档：https://m55giu8f62.feishu.cn/wiki/EjLRwwPdciVKY2kMT8icAzvgnbb
+如果遇到安装问题，建议查看帮助文档：https://github.com/testnet0/testnet/wiki/FAQ
 如果没有找到你的问题，请到 https://github.com/testnet0/testnet/issues"; echo_qrcode && exit 1; }
 
 echo_qrcode(){
