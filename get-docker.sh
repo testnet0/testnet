@@ -80,7 +80,7 @@ set -e
 
 # Git commit from https://github.com/docker/docker-install when
 # the script was uploaded (Should only be modified by upload job):
-SCRIPT_COMMIT_SHA="6d9743e9656cc56f699a64800b098d5ea5a60020"
+SCRIPT_COMMIT_SHA="0d6f72e671ba87f7aa4c6991646a1a5b9f9dae84"
 
 # strip "v" prefix if present
 VERSION="${VERSION#v}"
@@ -88,8 +88,6 @@ VERSION="${VERSION#v}"
 # The channel to install from:
 #   * stable
 #   * test
-#   * edge (deprecated)
-#   * nightly (deprecated)
 DEFAULT_CHANNEL_VALUE="stable"
 if [ -z "$CHANNEL" ]; then
 	CHANNEL=$DEFAULT_CHANNEL_VALUE
@@ -138,23 +136,16 @@ case "$mirror" in
 	AzureChinaCloud)
 		DOWNLOAD_URL="https://mirror.azure.cn/docker-ce"
 		;;
-  Tencent)
-    DOWNLOAD_URL="https://mirrors.tencent.com/docker-ce"
-    ;;
 	"")
 		;;
 	*)
-		>&2 echo "unknown mirror '$mirror': use either 'Aliyun', 'Tencent' or 'AzureChinaCloud'."
+		>&2 echo "unknown mirror '$mirror': use either 'Aliyun', or 'AzureChinaCloud'."
 		exit 1
 		;;
 esac
 
 case "$CHANNEL" in
 	stable|test)
-		;;
-	edge|nightly)
-		>&2 echo "DEPRECATED: the $CHANNEL channel has been deprecated and is no longer supported by this script."
-		exit 1
 		;;
 	*)
 		>&2 echo "unknown CHANNEL '$CHANNEL': use either stable or test."
@@ -177,12 +168,12 @@ command_exists() {
 # version_gte 23.0  // 0 (success)
 # version_gte 20.10 // 0 (success)
 # version_gte 19.03 // 0 (success)
-# version_gte 21.10 // 1 (fail)
+# version_gte 26.1  // 1 (fail)
 version_gte() {
 	if [ -z "$VERSION" ]; then
 			return 0
 	fi
-	eval version_compare "$VERSION" "$1"
+	version_compare "$VERSION" "$1"
 }
 
 # version_compare compares two version strings (either SemVer (Major.Minor.Path),
@@ -476,20 +467,23 @@ do_install() {
 	# Print deprecation warnings for distro versions that recently reached EOL,
 	# but may still be commonly used (especially LTS versions).
 	case "$lsb_dist.$dist_version" in
-		debian.stretch|debian.jessie)
+		centos.8|centos.7|rhel.7)
 			deprecation_notice "$lsb_dist" "$dist_version"
 			;;
-		raspbian.stretch|raspbian.jessie)
+		debian.buster|debian.stretch|debian.jessie)
 			deprecation_notice "$lsb_dist" "$dist_version"
 			;;
-		ubuntu.xenial|ubuntu.trusty)
+		raspbian.buster|raspbian.stretch|raspbian.jessie)
 			deprecation_notice "$lsb_dist" "$dist_version"
 			;;
-		ubuntu.lunar|ubuntu.kinetic|ubuntu.impish|ubuntu.hirsute|ubuntu.groovy|ubuntu.eoan|ubuntu.disco|ubuntu.cosmic)
+		ubuntu.bionic|ubuntu.xenial|ubuntu.trusty)
+			deprecation_notice "$lsb_dist" "$dist_version"
+			;;
+		ubuntu.mantic|ubuntu.lunar|ubuntu.kinetic|ubuntu.impish|ubuntu.hirsute|ubuntu.groovy|ubuntu.eoan|ubuntu.disco|ubuntu.cosmic)
 			deprecation_notice "$lsb_dist" "$dist_version"
 			;;
 		fedora.*)
-			if [ "$dist_version" -lt 36 ]; then
+			if [ "$dist_version" -lt 39 ]; then
 				deprecation_notice "$lsb_dist" "$dist_version"
 			fi
 			;;
@@ -498,19 +492,19 @@ do_install() {
 	# Run setup for each distro accordingly
 	case "$lsb_dist" in
 		ubuntu|debian|raspbian)
-			pre_reqs="apt-transport-https ca-certificates curl"
+			pre_reqs="ca-certificates curl"
 			apt_repo="deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] $DOWNLOAD_URL/linux/$lsb_dist $dist_version $CHANNEL"
 			(
 				if ! is_dry_run; then
 					set -x
 				fi
-				$sh_c 'apt-get update >/dev/null'
-				$sh_c "DEBIAN_FRONTEND=noninteractive apt-get install -y $pre_reqs"
+				$sh_c 'apt-get update -qq >/dev/null'
+				$sh_c "DEBIAN_FRONTEND=noninteractive apt-get install -y -qq $pre_reqs >/dev/null"
 				$sh_c 'install -m 0755 -d /etc/apt/keyrings'
 				$sh_c "curl -fsSL \"$DOWNLOAD_URL/linux/$lsb_dist/gpg\" -o /etc/apt/keyrings/docker.asc"
 				$sh_c "chmod a+r /etc/apt/keyrings/docker.asc"
 				$sh_c "echo \"$apt_repo\" > /etc/apt/sources.list.d/docker.list"
-				$sh_c 'apt-get update >/dev/null'
+				$sh_c 'apt-get update -qq >/dev/null'
 			)
 			pkg_version=""
 			if [ -n "$VERSION" ]; then
@@ -552,17 +546,12 @@ do_install() {
 				if ! is_dry_run; then
 					set -x
 				fi
-				$sh_c "DEBIAN_FRONTEND=noninteractive apt-get install -y $pkgs"
+				$sh_c "DEBIAN_FRONTEND=noninteractive apt-get install -y -qq $pkgs >/dev/null"
 			)
 			echo_docker_as_nonroot
 			exit 0
 			;;
 		centos|fedora|rhel)
-			if [ "$(uname -m)" != "s390x" ] && [ "$lsb_dist" = "rhel" ]; then
-				echo "Packages for RHEL are currently only available for s390x."
-				exit 1
-			fi
-
 			if command_exists dnf; then
 				pkg_manager="dnf"
 				pkg_manager_flags="--best"
@@ -589,7 +578,7 @@ do_install() {
 				if ! is_dry_run; then
 					set -x
 				fi
-				$sh_c "$pkg_manager $pkg_manager_flags install -y $pre_reqs"
+				$sh_c "$pkg_manager $pkg_manager_flags install -y -q $pre_reqs"
 				$sh_c "$config_manager --add-repo $repo_file_url"
 
 				if [ "$CHANNEL" != "stable" ]; then
@@ -642,7 +631,7 @@ do_install() {
 				if ! is_dry_run; then
 					set -x
 				fi
-				$sh_c "$pkg_manager $pkg_manager_flags install -y $pkgs"
+				$sh_c "$pkg_manager $pkg_manager_flags install -y -q $pkgs"
 			)
 			echo_docker_as_nonroot
 			exit 0
