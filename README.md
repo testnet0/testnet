@@ -39,7 +39,7 @@ cd testnet && bash build.sh
 
 ## 使用
 1. **快速入门**：参考：[快速入门指南](https://github.com/testnet0/testnet/wiki/快速入门)，快速开始使用TestNet资产管理系统。
-2. **进阶使用**：详见：[进阶使用](https://github.com/testnet0/testnet/wiki/功能使用指南)，了解各个模块的使用方法。
+2. **进阶使用**：详见：[进阶使用](https://github.com/testnet0/testnet/wiki/进阶使用)，了解各个模块的使用方法。
 
 ## 常见问题
 在安装或者使用过程中遇到问题？
