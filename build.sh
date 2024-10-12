@@ -3,6 +3,7 @@
 # Functions for messages
 info() { echo -e "\033[37m[TestNet] $*\033[0m"; }
 warning() { echo -e "\033[33m[TestNet] $*\033[0m"; }
+error() { echo -e "\033[31m[TestNet] $*\033[0m"; }
 abort() { echo -e "\033[31m[TestNet] $*\033[0m"; echo "
 如果遇到安装问题，建议查看帮助文档：https://github.com/testnet0/testnet/wiki/FAQ
 如果没有找到你的问题，请到 https://github.com/testnet0/testnet/issues"; echo_qrcode && exit 1; }
@@ -217,7 +218,7 @@ show_access_urls() {
     check_health_status
     warning "TestNet安装成功"
     warning "默认密码：admin/123456 TestNet/TestNet123@"
-    warning "登陆成功后请立即修改这两个账号的密码!!! 路径：系统管理/用户管理/更多/密码"
+    error "登陆成功后请立即修改这两个账号的密码!!! 路径：系统管理/用户管理/更多/密码"
     warning "后台访问地址：https://IP:8099/"
     for ip in $ips; do
         warning "https://$ip:8099/"
