@@ -8,7 +8,7 @@ abort() { echo -e "\033[31m[TestNet] $*\033[0m"; echo "
 如果没有找到你的问题，请到 https://github.com/testnet0/testnet/issues"; echo_qrcode && exit 1; }
 
 echo_qrcode(){
-  echo "用户交流群：
+  echo "加入用户交流群：
             █████████████████████████████████████
             █████████████████████████████████████
             ████ ▄▄▄▄▄ █▀█ █▄▄▀▀ █▄█ █ ▄▄▄▄▄ ████
@@ -209,13 +209,15 @@ start_testnet_server() {
 
 # Start TestNet client
 start_testnet_client() {
-    [[ -f ".env" ]] && grep -q '^IP=' .env && grep -q '^CLIENT_NAME=' .env && $compose_command -f docker-compose-client.yml up -d && echo "客户端启动成功" && echo_qrcode|| abort "请先配置IP和客户端名称，参考：https://m55giu8f62.feishu.cn/wiki/UmHtwhJTJihK6Ekr7ILcjRG9nFy?fromScene=spaceOverview"
+    [[ -f ".env" ]] && grep -q '^IP=' .env && grep -q '^CLIENT_NAME=' .env && $compose_command -f docker-compose-client.yml up -d && echo "客户端启动成功" && echo_qrcode|| abort "请先配置IP和客户端名称，参考：https://github.com/testnet0/testnet/wiki/%E5%A4%9A%E8%8A%82%E7%82%B9%E9%83%A8%E7%BD%B2%E6%95%99%E7%A8%8B"
 }
 
 # Show access URLs
 show_access_urls() {
     check_health_status
     warning "TestNet安装成功"
+    warning "默认密码：admin/123456 TestNet/TestNet123@"
+    warning "登陆成功后请立即修改这两个账号的密码!!! 路径：系统管理/用户管理/更多/密码"
     warning "后台访问地址：https://IP:8099/"
     for ip in $ips; do
         warning "https://$ip:8099/"
@@ -251,6 +253,10 @@ remove_all_containers_and_data() {
     rm -rf ./client_data
 }
 
+show_logs() {
+  $compose_command logs -f
+}
+
 # Main menu
 main_menu() {
     clear
@@ -265,7 +271,7 @@ main_menu() {
     echo -e "\033[33m===================================================="
     echo -e "#                                                  "
     echo -e "# 欢迎使用 TestNet安装工具                            "
-    echo -e "# 最新版本: 1.7                                      "
+    echo -e "# 最新版本: 1.8                                      "
     echo -e "# Author: testnet                                   "
     echo -e "# Date: $(date +"%Y-%m-%d %H:%M:%S")                "
     echo -e "#                                                   "
@@ -276,6 +282,7 @@ main_menu() {
     echo "4. 仅更新 TestNet服务端"
     echo "5. 仅更新 TestNet客户端"
     echo "6. 删除所有容器和数据"
+    echo "7. 查看日志"
     echo "0. 退出"
     echo -n "请输入数字进行操作："
     read opt
@@ -286,6 +293,7 @@ main_menu() {
         4) update_testnet_server ;;
         5) update_testnet_client ;;
         6) remove_all_containers_and_data ;;
+        7) show_logs ;;
         0) exit 0 ;;
         *) warning "无效的选项" ;;
     esac
