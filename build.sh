@@ -244,6 +244,7 @@ check_health_status() {
 }
 
 remove_all_containers_and_data() {
+    confirm "是否要删除所有数据？" || abort "取消"
     $compose_command stop testnet-server testnet-frontend testnet-mysql testnet-redis testnet-es testnet-client
     $compose_command rm -f testnet-server testnet-frontend testnet-mysql testnet-redis testnet-es testnet-client
     docker images | grep testnet0 | awk '{print $3}' | xargs docker rmi
