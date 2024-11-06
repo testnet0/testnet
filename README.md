@@ -1,6 +1,6 @@
 # TestNet资产管理系统
 
-[English](./README-en) / 简体中文
+[English](./README-en.md) / 简体中文
 
 ## 产品简介
 TestNet资产管理系统旨在提供全面、高效的互联网资产管理与监控服务，构建详细的资产信息库。
