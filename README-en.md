@@ -33,7 +33,7 @@ git clone https://github.com/testnet0/testnet.git
 cd testnet && bash build.sh
 ```
 
-Please refer to: [Installation Guide](/wiki/安装指南) for more detailed installation steps and configuration methods.
+Please refer to: [Installation Guide](https://testnet0.github.io/testnet-doc/guide/%E5%AE%89%E8%A3%85%E6%8C%87%E5%8D%97.html) for more detailed installation steps and configuration methods.
 ### 3. System Interface
 ![](https://raw.githubusercontent.com/testnet0/testnet/main/doc/img/dashboard.png)
 
@@ -41,7 +41,7 @@ Please refer to: [Installation Guide](/wiki/安装指南) for more detailed inst
 
 ### Detailed Documentation Link
 
-- [TestNet Wiki](wiki)
+- [TestNet Wiki](https://testnet0.github.io/testnet-doc)
 
 ### Source Code
 - [Frontend Source Code](https://github.com/testnet0/testnet-vue3)
