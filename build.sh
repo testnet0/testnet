@@ -139,7 +139,7 @@ install_docker_compose() {
 
 # Create .env file
 create_env_file() {
-    if [ -f ".env" ]; then
+    if [[ -f ".env" ]] && grep -q '^IMAGE_PREFIX=' .env && grep -q '^SUBNET_PREFIX=' .env ; then
         info ".env 文件已存在"
     else
         touch ".env"
