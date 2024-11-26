@@ -5,7 +5,7 @@ info() { echo -e "\033[37m[TestNet] $*\033[0m"; }
 warning() { echo -e "\033[33m[TestNet] $*\033[0m"; }
 error() { echo -e "\033[31m[TestNet] $*\033[0m"; }
 abort() { echo -e "\033[31m[TestNet] $*\033[0m"; echo "
-如果遇到安装问题，建议查看帮助文档：https://testnet0.github.io/testnet-doc/guide/%E5%AE%89%E8%A3%85%E6%8A%A5%E9%94%99.html
+如果遇到安装问题，建议查看帮助文档：https://testnet.shengkai.wang/guide/%E5%AE%89%E8%A3%85%E6%8A%A5%E9%94%99.html
 如果没有找到你的问题，请到 https://github.com/testnet0/testnet/issues"; echo_qrcode && exit 1; }
 
 echo_qrcode(){
@@ -210,7 +210,7 @@ start_testnet_server() {
 
 # Start TestNet client
 start_testnet_client() {
-    [[ -f ".env" ]] && grep -q '^IP=' .env && grep -q '^CLIENT_NAME=' .env && $compose_command -f docker-compose-client.yml up -d && echo "客户端启动成功" && echo_qrcode|| abort "请先配置IP和客户端名称，参考：https://testnet0.github.io/testnet-doc/guide/%E8%8A%82%E7%82%B9%E5%88%86%E5%B8%83%E5%BC%8F%E9%83%A8%E7%BD%B2.html"
+    [[ -f ".env" ]] && grep -q '^IP=' .env && grep -q '^CLIENT_NAME=' .env && $compose_command -f docker-compose-client.yml up -d && echo "客户端启动成功" && echo_qrcode|| abort "请先配置IP和客户端名称，参考：https://testnet.shengkai.wang/guide/%E8%8A%82%E7%82%B9%E5%88%86%E5%B8%83%E5%BC%8F%E9%83%A8%E7%BD%B2.html"
 }
 
 # Show access URLs
