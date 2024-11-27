@@ -49,8 +49,13 @@ confirm() {
 check_dependencies() {
     [[ -z "$BASH" ]] && abort "请用 bash 执行本脚本"
     [[ ! -t 0 ]] && abort "STDIN 不是标准的输入设备"
-    [[ "$EUID" -ne "0" ]] && abort "请以 root 权限运行"
-
+    os_type=$(uname)
+    if [ "$os_type" = "Linux" ]; then
+        if [[ "$EUID" -ne "0" ]]; then
+        echo "请以 root 权限运行"
+        abort "中止安装"
+        fi
+    fi
     if ! command_exists docker; then
         warning "缺少 Docker 环境"
         confirm "是否需要自动安装 Docker" && install_docker || abort "中止安装"
