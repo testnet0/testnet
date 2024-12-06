@@ -175,28 +175,25 @@ create_es_data_folder() {
     info "成功创建并设置 ./es_data 文件夹"
 }
 
-# Update TestNet server
-update_testnet_server() {
-    info "开始更新 TestNet 服务端..."
-    create_env_file
-    create_es_data_folder
-    # git pull
-    $compose_command down && $compose_command pull && $compose_command up -d || abort "更新失败"
-    info "TestNet 服务端更新完成"
-}
+# Update TestNet
+update_testnet() {
+    info "开始更新 TestNet..."
+    # 检查当前运行的容器是否包含 testnet-client 和 testnet-server
+    if docker ps --filter "name=testnet-client" --filter "name=testnet-server" | grep -q "testnet-client" && grep -q "testnet-server"; then
+        info "开始更新服务端和客户端"
+        compose_file="docker-compose.yml"  # 默认使用 docker-compose.yml
+    elif docker ps --filter "name=testnet-client" | grep -q "testnet-client"; then
+        info "开始更新服务端和客户端"
+        compose_file="docker-compose-client.yml" 
+    else
+        abort "没有找到相关的容器，无法更新"
+    fi
 
-# Update TestNet client
-update_testnet_client() {
-    info "开始更新 TestNet客户端..."
-    confirm "是否需要更新客户端？已安装工具需要重新安装" || abort "取消安装运行环境"
-    grep -q '^IP=' .env && docker compose -f docker-compose-client.yml down && docker compose -f docker-compose-client.yml pull && docker compose -f docker-compose-client.yml up -d || update_testnet_client_single
-    info "TestNet 客户端更新完成"
+    # 根据选定的 compose_file 执行更新操作
+    $compose_command -f $compose_file down && $compose_command -f $compose_file pull && $compose_command -f $compose_file up -d || abort "更新失败"
+    
+    info "TestNet 更新完成"
 }
-
-update_testnet_client_single() {
-    $compose_command stop testnet-client && $compose_command rm -f testnet-client && $compose_command pull testnet-client && $compose_command up -d testnet-client || abort "更新失败"
-}
-
 # Start TestNet
 start_testnet() {
     create_env_file
@@ -278,7 +275,7 @@ main_menu() {
     echo -e "\033[33m===================================================="
     echo -e "#                                                  "
     echo -e "# 欢迎使用 TestNet安装工具                            "
-    echo -e "# 最新版本: 1.8                                      "
+    echo -e "# 最新版本: 1.9                                      "
     echo -e "# Author: testnet                                   "
     echo -e "# Date: $(date +"%Y-%m-%d %H:%M:%S")                "
     echo -e "#                                                   "
@@ -286,10 +283,9 @@ main_menu() {
     echo "1. 一键安装 TestNet服务端 + 客户端（推荐配置：内存>4G ）"
     echo "2. 仅安装 TestNet服务端（推荐配置：公网IP，内存>2G）"
     echo "3. 仅安装 TestNet客户端（推荐配置：内存>2G）"
-    echo "4. 仅更新 TestNet服务端"
-    echo "5. 仅更新 TestNet客户端"
-    echo "6. 删除所有容器和数据"
-    echo "7. 查看日志"
+    echo "4. 更新 TestNet"
+    echo "5. 删除所有容器和数据"
+    echo "6. 查看日志"
     echo "0. 退出"
     echo -n "请输入数字进行操作："
     read opt
@@ -297,10 +293,9 @@ main_menu() {
         1) start_testnet ;;
         2) start_testnet_server ;;
         3) start_testnet_client ;;
-        4) update_testnet_server ;;
-        5) update_testnet_client ;;
-        6) remove_all_containers_and_data ;;
-        7) show_logs ;;
+        4) update_testnet ;;
+        5) remove_all_containers_and_data ;;
+        6) show_logs ;;
         0) exit 0 ;;
         *) warning "无效的选项" ;;
     esac
