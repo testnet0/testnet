@@ -110,9 +110,9 @@ services:
           "CMD-SHELL",
           "wget --spider --tries=1 --timeout=5 http://localhost:8080/jeecg-boot || exit 1"
         ]
-      interval: 90s
+      interval: 60s
       timeout: 10s
-      retries: 3
+      retries: 6
     restart: always
 
   testnet-frontend:
@@ -129,6 +129,8 @@ services:
       testnet-redis:
         condition: service_healthy
       testnet-es:
+        condition: service_healthy
+      testnet-server:
         condition: service_healthy
     restart: always
     healthcheck:
@@ -164,7 +166,7 @@ services:
       - REDIS_HOST=${SUBNET_PREFIX}.3
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_PORT=6379
-      - TESTNET_CLIENT_VERSION=V1.2
+      - TESTNET_CLIENT_VERSION=V1.9
       - TESTNET_RESULT_PATH=/testnet-client/results/
       - TESTNET_CLIENT_NAME=testnet-client-default
     restart: always

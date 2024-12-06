@@ -12,7 +12,7 @@ services:
       - REDIS_HOST=${IP}
       - REDIS_PORT=36379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - TESTNET_CLIENT_VERSION=V1.2
+      - TESTNET_CLIENT_VERSION=V1.9
       - TESTNET_RESULT_PATH=/testnet-client/results/
       - TESTNET_CLIENT_NAME=${CLIENT_NAME}
     restart: always
