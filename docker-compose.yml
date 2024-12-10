@@ -110,7 +110,7 @@ services:
           "CMD-SHELL",
           "wget --spider --tries=1 --timeout=5 http://localhost:8080/jeecg-boot || exit 1"
         ]
-      interval: 60s
+      interval: 300s
       timeout: 10s
       retries: 6
     restart: always
