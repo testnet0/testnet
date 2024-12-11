@@ -4,12 +4,16 @@
 info() { echo -e "\033[37m[TestNet] $*\033[0m"; }
 warning() { echo -e "\033[33m[TestNet] $*\033[0m"; }
 error() { echo -e "\033[31m[TestNet] $*\033[0m"; }
-abort() { echo -e "\033[31m[TestNet] $*\033[0m"; echo "
+abort() {
+    echo -e "\033[31m[TestNet] $*\033[0m"
+    echo "
 如果遇到安装问题，建议查看帮助文档：https://testnet.shengkai.wang/guide/%E5%AE%89%E8%A3%85%E6%8A%A5%E9%94%99.html
-如果没有找到你的问题，请到 https://github.com/testnet0/testnet/issues"; echo_qrcode && exit 1; }
+如果没有找到你的问题，请到 https://github.com/testnet0/testnet/issues"
+    echo_qrcode && exit 1
+}
 
-echo_qrcode(){
-  echo "加入用户交流群：
+echo_qrcode() {
+    echo "加入用户交流群：
             █████████████████████████████████████
             █████████████████████████████████████
             ████ ▄▄▄▄▄ █▀█ █▄▄▀▀ █▄█ █ ▄▄▄▄▄ ████
@@ -52,8 +56,8 @@ check_dependencies() {
     os_type=$(uname)
     if [ "$os_type" = "Linux" ]; then
         if [[ "$EUID" -ne "0" ]]; then
-        echo "请以 root 权限运行"
-        abort "中止安装"
+            echo "请以 root 权限运行"
+            abort "中止安装"
         fi
     fi
     if ! command_exists docker; then
@@ -64,7 +68,7 @@ check_dependencies() {
     docker version >/dev/null 2>&1 || abort "Docker 服务工作异常"
 
     compose_command="docker compose"
-    if $compose_command version > /dev/null 2>&1; then
+    if $compose_command version >/dev/null 2>&1; then
         info "发现 Docker Compose Plugin"
     else
         warning "未发现 Docker Compose Plugin"
@@ -84,8 +88,8 @@ check_dependencies() {
         else
             info "发现 docker-compose 组件: '$(command -v docker-compose)'"
             if ! $compose_command up -d --help >/dev/null 2>&1; then
-              warning "Docker Compose Plugin 不支持 '-d' 参数"
-              confirm "是否需要自动升级 Docker Compose Plugin" && install_docker_compose || abort "中止安装"
+                warning "Docker Compose Plugin 不支持 '-d' 参数"
+                confirm "是否需要自动升级 Docker Compose Plugin" && install_docker_compose || abort "中止安装"
             fi
         fi
     fi
@@ -122,7 +126,7 @@ install_docker() {
     for source in "${sources[@]}"; do
         average_delay=$(get_average_delay "$source")
         echo "source: $source, delay: $average_delay"
-        (( $(awk 'BEGIN {print '"$average_delay"' < '"$min_delay"' }') )) && min_delay=$average_delay && selected_source=$source
+        (($(awk 'BEGIN {print '"$average_delay"' < '"$min_delay"' }'))) && min_delay=$average_delay && selected_source=$source
     done
     echo "selected source: $selected_source"
     export DOWNLOAD_URL="$selected_source"
@@ -144,7 +148,7 @@ install_docker_compose() {
 
 # Create .env file
 create_env_file() {
-    if [[ -f ".env" ]] && grep -q '^IMAGE_PREFIX=' .env && grep -q '^SUBNET_PREFIX=' .env ; then
+    if [[ -f ".env" ]] && grep -q '^IMAGE_PREFIX=' .env && grep -q '^SUBNET_PREFIX=' .env; then
         info ".env 文件已存在"
     else
         touch ".env"
@@ -179,19 +183,20 @@ create_es_data_folder() {
 update_testnet() {
     info "开始更新 TestNet..."
     # 检查当前运行的容器是否包含 testnet-client 和 testnet-server
-    if docker ps --filter "name=testnet-client" --filter "name=testnet-server" | grep -q "testnet-client" && grep -q "testnet-server"; then
+    if docker ps --filter "name=testnet-client" | grep -q "testnet-client" &&
+        docker ps --filter "name=testnet-server" | grep -q "testnet-server"; then
         info "开始更新服务端和客户端"
-        compose_file="docker-compose.yml"  # 默认使用 docker-compose.yml
+        compose_file="docker-compose.yml"
     elif docker ps --filter "name=testnet-client" | grep -q "testnet-client"; then
         info "开始更新服务端和客户端"
-        compose_file="docker-compose-client.yml" 
+        compose_file="docker-compose-client.yml"
     else
         abort "没有找到相关的容器，无法更新"
     fi
 
     # 根据选定的 compose_file 执行更新操作
     $compose_command -f $compose_file down && $compose_command -f $compose_file pull && $compose_command -f $compose_file up -d || abort "更新失败"
-    
+
     info "TestNet 更新完成"
 }
 # Start TestNet
@@ -212,7 +217,7 @@ start_testnet_server() {
 
 # Start TestNet client
 start_testnet_client() {
-    [[ -f ".env" ]] && grep -q '^IP=' .env && grep -q '^CLIENT_NAME=' .env && $compose_command -f docker-compose-client.yml up -d && echo "客户端启动成功" && echo_qrcode|| abort "请先配置IP和客户端名称，参考：https://testnet.shengkai.wang/guide/%E8%8A%82%E7%82%B9%E5%88%86%E5%B8%83%E5%BC%8F%E9%83%A8%E7%BD%B2.html"
+    [[ -f ".env" ]] && grep -q '^IP=' .env && grep -q '^CLIENT_NAME=' .env && $compose_command -f docker-compose-client.yml up -d && echo "客户端启动成功" && echo_qrcode || abort "请先配置IP和客户端名称，参考：https://testnet.shengkai.wang/guide/%E8%8A%82%E7%82%B9%E5%88%86%E5%B8%83%E5%BC%8F%E9%83%A8%E7%BD%B2.html"
 }
 
 # Show access URLs
@@ -258,7 +263,7 @@ remove_all_containers_and_data() {
 }
 
 show_logs() {
-  $compose_command logs -f
+    $compose_command logs -f
 }
 
 # Main menu
@@ -290,14 +295,14 @@ main_menu() {
     echo -n "请输入数字进行操作："
     read opt
     case $opt in
-        1) start_testnet ;;
-        2) start_testnet_server ;;
-        3) start_testnet_client ;;
-        4) update_testnet ;;
-        5) remove_all_containers_and_data ;;
-        6) show_logs ;;
-        0) exit 0 ;;
-        *) warning "无效的选项" ;;
+    1) start_testnet ;;
+    2) start_testnet_server ;;
+    3) start_testnet_client ;;
+    4) update_testnet ;;
+    5) remove_all_containers_and_data ;;
+    6) show_logs ;;
+    0) exit 0 ;;
+    *) warning "无效的选项" ;;
     esac
     echo -e "\033[1;33m按任意键返回主菜单...\033[0m"
     read -n 1 -s
