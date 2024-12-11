@@ -35,7 +35,7 @@ services:
           "mysqladmin ping -h localhost -u root --password=$$MYSQL_ROOT_PASSWORD"
         ]
       interval: 30s
-      timeout: 10s
+      timeout: 1s
       retries: 3
       start_period: 60s
 
@@ -52,7 +52,7 @@ services:
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 30s
-      timeout: 10s
+      timeout: 1s
       retries: 3
 
   testnet-es:
@@ -75,7 +75,7 @@ services:
           "curl --silent --fail localhost:9200/_cat/health || exit 1"
         ]
       interval: 30s
-      timeout: 10s
+      timeout: 1s
       retries: 3
 
   testnet-server:
@@ -110,9 +110,10 @@ services:
           "CMD-SHELL",
           "wget --spider --tries=1 --timeout=5 http://localhost:8080/jeecg-boot || exit 1"
         ]
-      interval: 300s
-      timeout: 10s
-      retries: 6
+      interval: 30s
+      timeout: 1s
+      retries: 3
+      start_period: 120s
     restart: always
 
   testnet-frontend:
@@ -123,7 +124,6 @@ services:
         ipv4_address: ${SUBNET_PREFIX}.6
     ports:
       - "8099:443"
-    restart: always
     depends_on:
       testnet-mysql:
         condition: service_healthy
@@ -131,6 +131,9 @@ services:
         condition: service_healthy
       testnet-es:
         condition: service_healthy
+      testnet-server:
+        condition: service_healthy
+    restart: always
     healthcheck:
       test:
         [
@@ -138,5 +141,5 @@ services:
           "curl -k --silent --fail https://localhost:443 || exit 1"
         ]
       interval: 30s
-      timeout: 10s
+      timeout: 1s
       retries: 3
