@@ -262,6 +262,26 @@ remove_all_containers_and_data() {
     rm -rf ./client_data
 }
 
+reset_password() {
+    confirm "是否要重置密码？" || abort "取消"
+    # 从 .env 文件中读取 MYSQL_PASSWORD
+    PASSWORD=$(grep -E '^MYSQL_PASSWORD=' .env | cut -d '=' -f 2)
+
+    if [ -z "$PASSWORD" ]; then
+        echo "Error: MYSQL_PASSWORD not found in .env file."
+        exit 1
+    fi
+    warning
+    # 执行 Docker 和 MySQL 更新命令
+    docker exec -it testnet-mysql bash -c "mysql -uroot -p$PASSWORD -e \"USE jeecg-boot; UPDATE sys_user SET password='cb362cfeefbf3d8d', salt='RCGTeGiH' WHERE id='e9ca23d68d884d4ebb19d07889727dae';\""
+    if [ $? -eq 0 ]; then
+        warning "密码重置为admin/123456,登录成功后请立即修改密码！"
+    else
+        echo "密码重置失败！"
+    fi
+
+}
+
 show_logs() {
     $compose_command logs -f
 }
@@ -291,6 +311,7 @@ main_menu() {
     echo "4. 更新 TestNet"
     echo "5. 删除所有容器和数据"
     echo "6. 查看日志"
+    echo "7. 重置密码"
     echo "0. 退出"
     echo -n "请输入数字进行操作："
     read opt
@@ -301,6 +322,7 @@ main_menu() {
     4) update_testnet ;;
     5) remove_all_containers_and_data ;;
     6) show_logs ;;
+    7) reset_password ;;
     0) exit 0 ;;
     *) warning "无效的选项" ;;
     esac
