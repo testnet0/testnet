@@ -1,9 +1,6 @@
 services:
   testnet-client:
     image: ${IMAGE_PREFIX}/testnet_client
-    networks:
-      testnet:
-        ipv4_address: ${SUBNET_PREFIX}.7
     container_name: testnet-client
     volumes:
       - ./data/client_data/tools:/testnet-client/tools
