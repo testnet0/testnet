@@ -124,5 +124,5 @@ services:
       - TESTNET_RESULT_PATH=/testnet-client/results/
       - TESTNET_CLIENT_NAME=testnet-client-default
       - TESTNET_GRPC_TOKEN=${TESTNET_GRPC_TOKEN}
-      - GRPC_ADDRESS=static://${SUBNET_PREFIX}.4:9090
+      - GRPC_ADDRESS=static://${SUBNET_PREFIX}.5:443
     restart: always

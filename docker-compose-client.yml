@@ -7,7 +7,7 @@ services:
       - ./data/client_data/results:/testnet-client/results
     environment:
       - TESTNET_RESULT_PATH=/testnet-client/results/
-      - TESTNET_CLIENT_NAME=testnet-client
+      - CLIENT_NAME=${CLIENT_NAME}
       - TESTNET_GRPC_TOKEN=${TESTNET_GRPC_TOKEN}
       - GRPC_ADDRESS=${GRPC_ADDRESS}
     restart: always
