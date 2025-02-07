@@ -24,10 +24,8 @@ services:
     restart: always
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci --explicit_defaults_for_timestamp=true --lower_case_table_names=1 --max_allowed_packet=128M --default-authentication-plugin=caching_sha2_password --max-connections=500
     volumes:
-      - ./mysql_data:/var/lib/mysql
+      - ./data/mysql_data:/var/lib/mysql
       - ./db:/docker-entrypoint-initdb.d
-    ports:
-      - "33306:3306"
     healthcheck:
       test:
         [
@@ -36,8 +34,8 @@ services:
         ]
       interval: 30s
       timeout: 1s
-      retries: 3
-      start_period: 60s
+      retries: 10
+      start_period: 30s
 
   testnet-redis:
     image: ${IMAGE_PREFIX}/redis:5.0
@@ -46,44 +44,24 @@ services:
       testnet:
         ipv4_address: ${SUBNET_PREFIX}.3
     command: redis-server --requirepass ${REDIS_PASSWORD}
-    ports:
-      - "36379:6379"
     restart: always
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 30s
       timeout: 1s
       retries: 3
-
-  testnet-es:
-    image: ${IMAGE_PREFIX}/elasticsearch:7.10.0
-    container_name: testnet-es
+  testnet-server:
+    image: ${IMAGE_PREFIX}/testnet_server
+    container_name: testnet-server
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - ./data/server_data:/testnet-server/lucene
     networks:
       testnet:
         ipv4_address: ${SUBNET_PREFIX}.4
-    environment:
-      - node.name=elasticsearch
-      - discovery.type=single-node
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    volumes:
-      - ./es_data:/usr/share/elasticsearch/data
-    restart: always
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "curl --silent --fail localhost:9200/_cat/health || exit 1"
-        ]
-      interval: 30s
-      timeout: 1s
-      retries: 3
-
-  testnet-server:
-    image: ${IMAGE_PREFIX}/testnet_server:latest
-    container_name: testnet-server
-    networks:
-      testnet:
-        ipv4_address: ${SUBNET_PREFIX}.5
     environment:
       - MYSQL_URL=jdbc:mysql://${SUBNET_PREFIX}.2:3306/jeecg-boot?characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
       - MYSQL_USERNAME=root
@@ -91,48 +69,37 @@ services:
       - REDIS_HOST=${SUBNET_PREFIX}.3
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - ES_HOST=${SUBNET_PREFIX}.4:9200
-      - ES_PASSWORD=
-      - GPT_ENABLE=${GPT_ENABLE}
-      - GPT_KEY=${GPT_KEY}
-      - GPT_HOST=${GPT_HOST}
+      - AI_ENABLE=${AI_ENABLE}
+      - AI_MODEL=${AI_MODEL}
+      - AI_API_KEY=${AI_API_KEY}
+      - AI_API_HOST=${AI_API_HOST}
       - TESTNET_API_TOKEN=${TESTNET_API_TOKEN}
+      - TESTNET_GRPC_TOKEN=${TESTNET_GRPC_TOKEN}
     depends_on:
       testnet-mysql:
         condition: service_healthy
       testnet-redis:
-        condition: service_healthy
-      testnet-es:
         condition: service_healthy
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "wget --spider --tries=1 --timeout=5 http://localhost:8080/jeecg-boot || exit 1"
+          "nc -z -w 5 localhost 8080 || exit 1"
         ]
       interval: 30s
       timeout: 1s
       retries: 3
-      start_period: 120s
+      start_period: 60s
     restart: always
 
   testnet-frontend:
     container_name: testnet-frontend
-    image: ${IMAGE_PREFIX}/testnet_frontend:latest
+    image: ${IMAGE_PREFIX}/testnet_frontend
     networks:
       testnet:
-        ipv4_address: ${SUBNET_PREFIX}.6
+        ipv4_address: ${SUBNET_PREFIX}.5
     ports:
       - "8099:443"
-    depends_on:
-      testnet-mysql:
-        condition: service_healthy
-      testnet-redis:
-        condition: service_healthy
-      testnet-es:
-        condition: service_healthy
-      testnet-server:
-        condition: service_healthy
     restart: always
     healthcheck:
       test:
@@ -145,29 +112,17 @@ services:
       retries: 3
 
   testnet-client:
-    image: ${IMAGE_PREFIX}/testnet_client:latest
+    image: ${IMAGE_PREFIX}/testnet_client
     networks:
       testnet:
         ipv4_address: ${SUBNET_PREFIX}.7
     container_name: testnet-client
     volumes:
-      - ./client_data/tools:/testnet-client/tools
-      - ./client_data/results:/testnet-client/results
-    depends_on:
-      testnet-mysql:
-        condition: service_healthy
-      testnet-redis:
-        condition: service_healthy
-      testnet-es:
-        condition: service_healthy
+      - ./data/client_data/tools:/testnet-client/tools
+      - ./data/client_data/results:/testnet-client/results
     environment:
-      - MYSQL_URL=jdbc:mysql://${SUBNET_PREFIX}.2:3306/jeecg-boot?characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
-      - MYSQL_USERNAME=root
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-      - REDIS_HOST=${SUBNET_PREFIX}.3
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_PORT=6379
-      - TESTNET_CLIENT_VERSION=V1.9
       - TESTNET_RESULT_PATH=/testnet-client/results/
       - TESTNET_CLIENT_NAME=testnet-client-default
+      - TESTNET_GRPC_TOKEN=${TESTNET_GRPC_TOKEN}
+      - GRPC_ADDRESS=static://${SUBNET_PREFIX}.4:9090
     restart: always

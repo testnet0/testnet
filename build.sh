@@ -164,19 +164,15 @@ create_env_file() {
             echo "REDIS_PASSWORD=$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 32)" >>.env
             echo "MYSQL_PASSWORD=$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 32)" >>.env
             echo "TESTNET_API_TOKEN=$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 32)" >>.env
+            echo "TESTNET_GRPC_TOKEN=$(LC_ALL=C tr -dc A-Za-z0-9 </dev/urandom | head -c 32)" >>.env
+
             echo "SUBNET_PREFIX=172.16.1" >>.env
-            echo "GPT_ENABLE=false" >>.env
-            echo "GPT_KEY=xxx" >>.env
-            echo "GPT_HOST=https://api.openai.com" >>.env
+            echo "AI_ENABLE=false" >>.env
+            echo "AI_MODEL=deepseek-chat" >>.env
+            echo "AI_API_KEY=xxx" >>.env
+            echo "AI_API_HOST=https://api.deepseek.com" >>.env
         fi
     fi
-}
-
-# Create ES data folder
-create_es_data_folder() {
-    [[ -d "./es_data" ]] && info "文件夹已存在" || mkdir "./es_data" || abort "创建 /es_data 文件夹失败"
-    chmod 777 ./es_data || abort "设置 ./es_data 文件夹权限失败"
-    info "成功创建并设置 ./es_data 文件夹"
 }
 
 # Update TestNet
@@ -202,7 +198,6 @@ update_testnet() {
 # Start TestNet
 start_testnet() {
     create_env_file
-    create_es_data_folder
     $compose_command up -d || abort "启动 Docker 容器失败"
     show_access_urls
 }
@@ -210,7 +205,6 @@ start_testnet() {
 # Start TestNet server
 start_testnet_server() {
     create_env_file
-    create_es_data_folder
     $compose_command -f docker-compose-server.yml up -d || abort "启动 Docker 容器失败"
     show_access_urls
 }
@@ -224,18 +218,16 @@ start_testnet_client() {
 show_access_urls() {
     check_health_status
     warning "TestNet安装成功"
-    warning "默认密码：admin/123456 TestNet/TestNet123@"
-    error "登陆成功后请立即修改这两个账号的密码!!! 路径：系统管理/用户管理/更多/密码"
     warning "后台访问地址：https://IP:8099/"
+    docker logs testnet-server | grep '随机密码：'
     for ip in $ips; do
         warning "https://$ip:8099/"
     done
     echo_qrcode
 }
-
 # Check container health status
 check_health_status() {
-    local services=("testnet-mysql" "testnet-redis" "testnet-server" "testnet-frontend" "testnet-es")
+    local services=("testnet-mysql" "testnet-redis" "testnet-server" "testnet-frontend")
     local timeout=300 interval=5 elapsed=0
     info "等待服务启动中，请稍后..."
     while [[ $elapsed -lt $timeout ]]; do
@@ -253,13 +245,13 @@ check_health_status() {
 
 remove_all_containers_and_data() {
     confirm "是否要删除所有数据？" || abort "取消"
-    $compose_command stop testnet-server testnet-frontend testnet-mysql testnet-redis testnet-es testnet-client
-    $compose_command rm -f testnet-server testnet-frontend testnet-mysql testnet-redis testnet-es testnet-client
+    # 停止所有包含 testnet 前缀的容器
+    docker stop $(docker ps -q --filter "name=testnet")
+    # 删除所有包含 testnet 前缀的容器
+    docker rm -f $(docker ps -a -q --filter "name=testnet")
     docker images | grep testnet0 | awk '{print $3}' | xargs docker rmi
-    rm -rf ./es_data
+    rm -rf ./data
     rm -f .env
-    rm -rf ./mysql_data
-    rm -rf ./client_data
 }
 
 reset_password() {
