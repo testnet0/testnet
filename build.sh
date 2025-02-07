@@ -148,7 +148,7 @@ install_docker_compose() {
 
 # Create .env file
 create_env_file() {
-    chmod 755 ./db
+    chmod 755 ./db/*
     if [[ -f ".env" ]] && grep -q '^IMAGE_PREFIX=' .env && grep -q '^SUBNET_PREFIX=' .env; then
         info ".env 文件已存在"
     else
