@@ -183,11 +183,6 @@ update_testnet() {
 
     info "开始更新 TestNet..."
 
-    # 检查 compose_command 是否可用
-    if ! command_exists "$compose_command"; then
-        abort "未找到有效的 Docker Compose 命令，请检查环境配置"
-    fi
-
     # 检查当前运行的容器是否包含 testnet-client 和 testnet-server
     if docker ps --filter "name=^testnet-server$" | grep -q "testnet-server"; then
         if docker ps --filter "name=^testnet-client$" | grep -q "testnet-client"; then
