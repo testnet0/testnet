@@ -177,23 +177,42 @@ create_env_file() {
     fi
 }
 
-# Update TestNet
 update_testnet() {
+    # 参数说明：无参数
+    # 返回值：无返回值，失败时通过 abort 函数退出
+
     info "开始更新 TestNet..."
+
+    # 检查 compose_command 是否可用
+    if ! command_exists "$compose_command"; then
+        abort "未找到有效的 Docker Compose 命令，请检查环境配置"
+    fi
+
     # 检查当前运行的容器是否包含 testnet-client 和 testnet-server
-    if docker ps --filter "name=testnet-client" | grep -q "testnet-client" &&
-        docker ps --filter "name=testnet-server" | grep -q "testnet-server"; then
-        info "开始更新服务端和客户端"
-        compose_file="docker-compose.yml"
-    elif docker ps --filter "name=testnet-client" | grep -q "testnet-client"; then
-        info "开始更新服务端和客户端"
+    if docker ps --filter "name=^testnet-server$" | grep -q "testnet-server"; then
+        if docker ps --filter "name=^testnet-client$" | grep -q "testnet-client"; then
+            info "开始更新服务端和客户端"
+            compose_file="docker-compose.yml"
+        else
+            info "开始更新服务端"
+            compose_file="docker-compose-server.yml"
+        fi
+    elif docker ps --filter "name=^testnet-client$" | grep -q "testnet-client"; then
+        info "开始更新客户端"
         compose_file="docker-compose-client.yml"
     else
         abort "没有找到相关的容器，无法更新"
     fi
 
     # 根据选定的 compose_file 执行更新操作
-    $compose_command -f $compose_file down && $compose_command -f $compose_file pull && $compose_command -f $compose_file up -d || abort "更新失败"
+    info "正在停止旧容器..."
+    $compose_command -f "$compose_file" down || abort "停止旧容器失败"
+
+    info "正在拉取最新镜像..."
+    $compose_command -f "$compose_file" pull || abort "拉取最新镜像失败"
+
+    info "正在启动新容器..."
+    $compose_command -f "$compose_file" up -d || abort "启动新容器失败"
 
     info "TestNet 更新完成"
 }
