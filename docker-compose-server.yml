@@ -33,9 +33,9 @@ services:
           "mysqladmin ping -h localhost -u root --password=$$MYSQL_ROOT_PASSWORD"
         ]
       interval: 30s
-      timeout: 1s
+      timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 60s
 
   testnet-redis:
     image: ${IMAGE_PREFIX}/redis:5.0
