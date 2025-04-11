@@ -1,7 +1,7 @@
 services:
   testnet-client:
     image: ${IMAGE_PREFIX}/testnet_client
-    container_name: testnet-client
+    container_name: testnet-client-test
     volumes:
       - ./data/client_data/tools:/testnet-client/tools
       - ./data/client_data/results:/testnet-client/results
@@ -9,5 +9,7 @@ services:
       - TESTNET_RESULT_PATH=/testnet-client/results/
       - CLIENT_NAME=${CLIENT_NAME}
       - TESTNET_GRPC_TOKEN=${TESTNET_GRPC_TOKEN}
-      - GRPC_ADDRESS=${GRPC_ADDRESS}
+      - GRPC_ADDRESS=static://testnet-server:8099
+    extra_hosts:
+      - "testnet-server:${SERVER_ADDRESS}"
     restart: always
