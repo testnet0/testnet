@@ -227,7 +227,7 @@ start_testnet_server() {
 
 # Start TestNet client
 start_testnet_client() {
-    [[ -f ".env" ]] && grep -q '^GRPC_ADDRESS=' .env && grep -q '^CLIENT_NAME=' .env && $compose_command -f docker-compose-client.yml up -d && echo "客户端启动成功" && echo_qrcode || abort "请先配置服务端地址和客户端名称，参考：https://testnet.shengkai.wang/guide/%E8%8A%82%E7%82%B9%E5%88%86%E5%B8%83%E5%BC%8F%E9%83%A8%E7%BD%B2.html"
+    [[ -f ".env" ]] && grep -q '^SERVER_ADDRESS=' .env && grep -q '^CLIENT_NAME=' .env && $compose_command -f docker-compose-client.yml up -d && echo "客户端启动成功" && echo_qrcode || abort "请先配置服务端地址和客户端名称，参考：https://testnet.shengkai.wang/guide/%E8%8A%82%E7%82%B9%E5%88%86%E5%B8%83%E5%BC%8F%E9%83%A8%E7%BD%B2.html"
 }
 
 # Show access URLs
