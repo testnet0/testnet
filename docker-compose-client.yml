@@ -1,7 +1,7 @@
 services:
   testnet-client:
     image: ${IMAGE_PREFIX}/testnet_client
-    container_name: testnet-client-test
+    container_name: testnet-client
     volumes:
       - ./data/client_data/tools:/testnet-client/tools
       - ./data/client_data/results:/testnet-client/results
