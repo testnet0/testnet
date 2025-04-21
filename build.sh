@@ -308,7 +308,7 @@ main_menu() {
     echo -e "\033[33m===================================================="
     echo -e "#                                                  "
     echo -e "# 欢迎使用 TestNet安装工具                            "
-    echo -e "# 最新版本: 2.1                                      "
+    echo -e "# 最新版本: 2.2                                      "
     echo -e "# Author: testnet                                   "
     echo -e "# 当前日期: $(date +"%Y-%m-%d %H:%M:%S")                "
     echo -e "#                                                   "
