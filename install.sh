@@ -123,12 +123,16 @@ download_resources() {
         # 如果下载清单里包含 version.yml，跳过
         [ "$file" == "version.yml" ] && continue
         
-        local filename=$(basename "$file")
-        echo -n -e "正在拉取 $filename ... "
-        curl -sSL "$SELECTED_SOURCE/$file" -o "$filename"
+        local dir_part=$(dirname "$file")
+        if [ "$dir_part" != "." ]; then
+            mkdir -p "$dir_part"
+        fi
+
+        echo -n -e "正在拉取 $file ... "
+        curl -sSL "$SELECTED_SOURCE/$file" -o "$file"
         
         # 验证文件内容
-        if [ $? -ne 0 ] || grep -qE "^\{|^<html>" "$filename"; then
+        if [ $? -ne 0 ] || grep -qE "^\{|^<html>" "$file"; then
             echo -e "${RED}失败 (内容无效或不存在)${NC}"
             exit 1
         fi
@@ -137,9 +141,9 @@ download_resources() {
         if [ -n "$expected_md5" ] && [ "$expected_md5" != "$file" ]; then
             local downloaded_md5=""
             if command -v md5sum >/dev/null 2>&1; then
-                downloaded_md5=$(md5sum "$filename" | cut -d' ' -f1)
+                downloaded_md5=$(md5sum "$file" | cut -d' ' -f1)
             elif command -v md5 >/dev/null 2>&1; then
-                downloaded_md5=$(md5 -q "$filename")
+                downloaded_md5=$(md5 -q "$file")
             fi
             
             if [ -n "$downloaded_md5" ] && [ "$downloaded_md5" != "$expected_md5" ]; then
