@@ -146,8 +146,8 @@ services:
       # This is required for containerized tool execution but presents a privilege escalation risk.
       # In production, consider using Docker-in-Docker (DinD) or rootless Docker alternatives.
       - /var/run/docker.sock:/var/run/docker.sock
-      - /opt/testnet/client-data:/opt/testnet/client-data
-      - /opt/testnet/client-work:/opt/testnet/client-work
+      - ./client-data:/opt/testnet/client-data
+      - ./client-work:/opt/testnet/client-work
     depends_on:
       testnet-server:
         condition: service_healthy

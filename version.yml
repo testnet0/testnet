@@ -1,9 +1,9 @@
 version: v3.0.0
 files:
   - testnet.sh:e1606a8f45bd784634994d8c81ccc5a2
-  - docker-compose.yml:0d2b6268c2bb6c187695c7b6be8a3648
+  - docker-compose.yml:a54cf56fcbc630c9e4b89ab4215bb3d1
   - testnet-pg.sql:84b0394bc6ae5fc58bb16263523487e2
-  - nginx.conf:28ed5a68ac6d6ac53a23c65a9a565770
+  - nginx.conf:cf5dc98003fe0eda0cab886218c5c87d
   - gen-certs.sh:312349c434fc529f95f7ff21046a0f81
   - certs/server.crt:6464927556bf29b12098fa9b71dd2285
   - certs/server.key:9ea015174189a661ebbf4bb3da6b91f3
