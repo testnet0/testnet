@@ -1,64 +1,155 @@
-## 📋 环境要求
+# TestNet Asset Management System
+English / [简体中文](./README_CN.md)
 
-在运行脚本之前，请确保您的系统已安装以下软件：
+## Product Introduction
+TestNet Asset Management System is designed to provide comprehensive and efficient internet asset management and monitoring services, building a detailed asset repository. The system helps corporate security teams or penetration testers conduct deep reconnaissance and analysis of target assets, providing continuous risk monitoring from an attacker's perspective. It assists users in keeping track of asset dynamics in real-time, identifying and fixing security vulnerabilities, thereby effectively reducing the attack surface and enhancing overall security defense capabilities.
 
-- **Docker**: 推荐 20.10+ 版本
-- **Docker Compose**: 推荐 v2.0+ 版本（脚本支持 `docker compose` 和 `docker-compose` 命令）
+## Project Screenshots
 
-## 🚀 快速开始
- 
- ### 1. 一键引导安装 (推荐)
- 
- 这是最简单的安装方式，会自动检查环境依赖并拉取最新资源。在您的服务器上执行：
- 
- ```bash
- # 使用国内镜像 (默认)
- curl -sSL https://cnb.cool/testnet0/testnet-public/-/git/raw/main/deploy/install.sh | bash
- ```
- 
- 或者使用 GitHub 源：
- ```bash
- curl -sSL https://raw.githubusercontent.com/testnet0/testnet-public/main/deploy/install.sh | bash
- ```
- 
- ### 2. 交互式配置
- 
- 安装脚本会自动下载所需文件并引导您进入配置阶段：
- 
- - **镜像源选择**: 选择 DockerHub 或 阿里云加速。
- - **自动生成配置**: 脚本会自动生成 `.env` 及随机密码。
- - **管理员记录**: 安装完成后，请**务必妥善保存**输出的管理员随机密码。
+### Dashboard
+![Dashboard](./images/dashboard_en.png)
 
-### 3. 访问平台
+### Asset Management
 
-安装成功后，默认访问地址为：
+#### Subdomain Asset Management
+![Subdomain Asset Management](./images/assets1_en.png)
 
-- **URL**: `https://localhost:3100`
-- **默认账号**: `admin`
-- **默认密码**: 安装脚本输出的随机密码
+#### Web Asset Management
+![Web Asset Management](./images/assets2_en.png)
+
+### Space Engine
+![Space Engine](./images/space_engine_en.png)
 
 ---
 
-## 🛠️ 命令参考
-
-脚本支持以下子命令：
-
-| 命令             | 说明                                                       |
-| :--------------- | :--------------------------------------------------------- |
-| `install`        | 首次执行。检查环境、选择镜像源、生成配置并启动服务。       |
-| `start`          | 启动所有 TestNet 容器服务。                                |
-| `stop`           | 停止运行中的容器，但保留容器状态。                         |
-| `restart`        | 重启所有 TestNet 容器服务。                                |
-| `update`         | 拉取最新的 Docker 镜像并平滑更新服务。                     |
-| `status`         | 查看当前 TestNet 服务的运行状态（容器列表）。              |
-| `logs`           | 查看实时动态日志（Ctrl+C 退出）。                          |
-| `reset-password` | **紧急重置**: 将 `admin` 用户的密码重置为 `Admin@123456`。 |
+## Features Overview
+Currently, TestNet Asset Management System supports the following key features:
+- **Project Management**: Manage multiple independent asset projects.
+- **Asset Management**: Comprehensive management of companies, domains, subdomains, IPs, ports, Web interfaces, APIs, vulnerabilities, asset tags, blacklists, etc.
+- **User Management**: Configure user permissions, role assignments, and access control.
+- **Asset Import & Export**: Easy importing and exporting of asset data (supporting Excel and JSON formats).
+- **Advanced Search**: Powerful asset topology graphs and multi-dimensional search, supporting graph analysis and force-directed relationship maps.
+- **Workflow & DSL Customization**: Support for Tool Spec and Workflow Spec vNext YAML definitions, enabling fully customized scanning scripts and process orchestration.
+- **Batch Scanning & Scheduled Tasks**: Support for batch asset scanning and automatically triggered scheduled scan tasks.
+- **Node Configuration Customization**: Flexible configuration of distributed multi-nodes with real-time STOMP communication wakeup mechanism.
+- **AI Assistant**: Built-in MCP (Model Context Protocol) adapter layer, allowing external AI assistants to retrieve assets and execute tasks more intelligently and efficiently.
 
 ---
 
-## ⚠️ 重要提示
+## Integrated Tools
 
-1. **配置文件**: 脚本生成的 `.env` 文件包含数据库密码、JWT 密钥等敏感信息。请勿随意泄露或删除。
-2. **授权文件**: 生产环境服务端必须配置授权文件，默认挂载目录为 `deploy/license/server/`。
-3. **数据库**: 全新安装时 PostgreSQL 自动执行 `testnet-pg.sql` 初始化，后续升级由服务端启动时通过 Flyway migration 完成。数据持久化存储在 Docker Volume 中，即使删除容器，数据也不会丢失。
-4. **Windows 用户**: 请在 PowerShell 中运行对应的 `testnet.ps1` 脚本，或者在 WSL (Windows Subsystem for Linux) 中运行 `testnet.sh`。
+### 1. Scanning & Reconnaissance Tools
+- **Subdomain Scanning**: OneForAll, subfinder
+- **Port Scanning**: nmap, naabu, masscan, Rustscan, firewall detection
+- **Web Discovery & Screenshotting**: httpx
+- **Web Fingerprinting**: TideFinger, xapp
+- **Vulnerability Scanning**: nuclei, Xpoc, Afrog
+- **Web Sensitive Directory Scanning**: DirSearch, ffuf
+- **Web Crawler**: katana
+- **Basic Queries**: ICP filing query
+
+### 2. Space Search Engines Integration
+- Quick integration with major cyberspace search engines such as Fofa, Hunter, Shodan, Quake, etc.
+
+---
+
+## Installation & Usage
+
+### Installation
+Open the terminal and run the following commands to clone the repository and run the installation script:
+
+```bash
+git clone https://github.com/testnet0/testnet.git
+cd testnet && bash build.sh
+```
+
+Please refer to: [Installation Guide](https://testnet.shengkai.wang/deploy/overview) for more detailed installation steps and configuration methods.
+
+### Usage
+- **Quick Start**: Refer to: [Quickstart Guide](https://testnet.shengkai.wang/guide/quickstart) to quickly start using TestNet Asset Management System.
+
+### FAQ
+Encountered problems during installation or usage? Please check: [FAQ](https://testnet.shengkai.wang/guide/faq) for help.
+
+### Developer Quick Start (Developer Onboarding)
+
+#### 1. Start Dependencies (PostgreSQL 16 & Redis 7)
+```bash
+docker compose -f docker-compose-dev.yml up -d
+```
+
+#### 2. Start Backend (Spring Boot 3.4.3)
+```bash
+cd testnet-server
+mvn spring-boot:run
+```
+
+#### 3. Start Frontend (Vue 3.5 & Vite 8)
+```bash
+cd testnet-web
+npm install
+npm run dev
+```
+
+#### 4. Start Scan Node (Go 1.21+)
+```bash
+cd testnet-client
+go run ./cmd -server http://localhost:8081 -secret default-client-secret-for-dev-environment-32chars -name MyNode
+```
+
+---
+
+## Directory Structure
+```text
+TestNet/
+├── testnet-server/     # Java backend core service (Spring Boot 3.4, JDK 17)
+├── testnet-web/        # Vue 3 frontend management UI (Vite, Naive UI, UnoCSS)
+├── testnet-client/     # Go distributed scan client node (Go 1.21+)
+├── testnet-registry/   # DSL tools and workflows files
+├── deploy/             # Docker Compose deployment, Nginx, init SQL
+└── scripts/            # Development helper scripts
+```
+
+---
+
+## Common Commands & Testing Instructions
+
+### 1. Backend (Java)
+```bash
+cd testnet-server
+mvn clean package -Dmaven.test.skip=true  # Package (skip tests)
+mvn test                                 # Run all tests and generate coverage report
+mvn test -Dtest=ClassName                # Run single test class using H2
+```
+
+### 2. Frontend (Vue 3)
+```bash
+cd testnet-web
+npm run build           # Production build
+npm run test:run        # Run Vitest unit tests
+npm run format          # Code formatting (Prettier)
+```
+
+### 3. Go Scan Node
+```bash
+cd testnet-client
+go build -o testnet-client ./cmd
+./testnet-client validate --spec ../testnet-registry/tools/nmap-fast-scan/1.0.1.yaml
+./testnet-client test --spec ../testnet-registry/tools/nmap-fast-scan/1.0.1.yaml --mock mock.yaml --verbose
+```
+
+---
+
+## Sponsor
+If this project has helped you, you can sponsor the author to buy a cup of coffee. Thank you for your support!
+
+![Sponsorship QR Code](./images/qrcode.png)
+
+---
+
+## Disclaimer
+1. This tool should only be used in enterprise security architecture where sufficient legal authorization has been obtained.
+2. When using this tool, users must ensure that all actions comply with local laws and regulations.
+3. If users commit any illegal acts while using this tool, the users themselves shall bear all consequences. All developers and contributors of this tool do not assume any legal or joint liability.
+4. Unless users have fully read, completely understood, and accepted all terms of this agreement, please do not install or use this tool.
+5. A user's usage behavior or acceptance of this agreement in any other express or implied manner shall be deemed as having read and agreed to be bound by this agreement.
