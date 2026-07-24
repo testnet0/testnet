@@ -120,8 +120,10 @@ download_resources() {
         local file=$(echo "$entry" | cut -d':' -f1)
         local expected_md5=$(echo "$entry" | cut -d':' -f2)
 
-        # 如果下载清单里包含 version.yml，跳过
-        [ "$file" == "version.yml" ] && continue
+        # 如果下载清单里包含 version.yml 或 install.sh，跳过
+        if [ "$file" == "version.yml" ] || [ "$file" == "install.sh" ]; then
+            continue
+        fi
         
         local dir_part=$(dirname "$file")
         if [ "$dir_part" != "." ]; then
