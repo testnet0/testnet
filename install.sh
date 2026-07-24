@@ -11,7 +11,7 @@ NC='\033[0m'
 
 # 资源配置
 CNB_BASE_URL="https://cnb.cool/testnet0/testnet-public/-/git/raw/main"
-GITHUB_BASE_URL="https://raw.githubusercontent.com/testnet0/testnet-public/main"
+GITHUB_BASE_URL="https://raw.githubusercontent.com/testnet0/testnet/main"
 
 # 初始化变量
 SELECTED_SOURCE=""
