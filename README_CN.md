@@ -55,11 +55,16 @@ TestNet 资产管理系统旨在提供全面、高效的互联网资产管理与
 ## 安装与使用 (Installation & Usage)
 
 ### 安装
-打开终端，执行以下命令来克隆项目并运行安装脚本：
 
+**方式一：极简网络一键安装（推荐）**
+```bash
+curl -fsSL https://cnb.cool/testnet0/testnet-public/-/git/raw/main/install.sh | bash
+```
+
+**方式二：克隆仓库后安装**
 ```bash
 git clone https://github.com/testnet0/testnet.git
-cd testnet && bash build.sh
+cd testnet && chmod +x testnet.sh && ./testnet.sh install
 ```
 
 请参考：[安装指南](https://testnet.shengkai.wang/deploy/overview) 以获取更详细的安装步骤和配置方法。

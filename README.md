@@ -56,11 +56,16 @@ Currently, TestNet Asset Management System supports the following key features:
 ## Installation & Usage
 
 ### Installation
-Open the terminal and run the following commands to clone the repository and run the installation script:
 
+**Option 1: One-Line Online Installation (Recommended)**
+```bash
+curl -fsSL https://raw.githubusercontent.com/testnet0/testnet-public/main/install.sh | bash
+```
+
+**Option 2: Local Installation (After Git Clone)**
 ```bash
 git clone https://github.com/testnet0/testnet.git
-cd testnet && bash build.sh
+cd testnet && chmod +x testnet.sh && ./testnet.sh install
 ```
 
 Please refer to: [Installation Guide](https://testnet.shengkai.wang/deploy/overview) for more detailed installation steps and configuration methods.
