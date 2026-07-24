@@ -4,7 +4,7 @@ files:
   - install.sh:9532d8c39094036c7c4c01a7810adca7
   - docker-compose.yml:62bd554c1d4695c4f507c7a61f210e54
   - testnet-pg.sql:84b0394bc6ae5fc58bb16263523487e2
-  - nginx.conf:dc2079e051407d52972378bcbb50772a
+  - nginx.conf:28ed5a68ac6d6ac53a23c65a9a565770
   - gen-certs.sh:312349c434fc529f95f7ff21046a0f81
   - certs/server.crt:6464927556bf29b12098fa9b71dd2285
   - certs/server.key:9ea015174189a661ebbf4bb3da6b91f3
