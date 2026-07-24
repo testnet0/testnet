@@ -267,8 +267,12 @@ load_env_vars() {
         
         export DOCKER_REGISTRY="${DOCKER_REGISTRY:-testnet0/}"
         
-        # 官方镜像 (PostgreSQL / Redis) 不加特定 namespace 前缀，保持 OFFICIAL_REGISTRY 为空
-        export OFFICIAL_REGISTRY=""
+        # 根据 DOCKER_REGISTRY 设置 OFFICIAL_REGISTRY (国内阿里云源加速模式下从阿里云拉取 postgres/redis)
+        if [ "$DOCKER_REGISTRY" = "testnet0/" ]; then
+            export OFFICIAL_REGISTRY=""
+        else
+            export OFFICIAL_REGISTRY="$DOCKER_REGISTRY"
+        fi
         
         if [ -z "$TESTNET_VERSION" ] && [ "$1" != "install" ] && [ "$1" != "update" ]; then
             echo -e "${YELLOW}检测到 .env 中缺少版本号，正在尝试补全...${NC}"
@@ -382,7 +386,11 @@ case "$1" in
         fi
         
         export DOCKER_REGISTRY=$SELECTED_REGISTRY_URL
-        export OFFICIAL_REGISTRY=""
+        if [ "$DOCKER_REGISTRY" = "testnet0/" ]; then
+            export OFFICIAL_REGISTRY=""
+        else
+            export OFFICIAL_REGISTRY="$DOCKER_REGISTRY"
+        fi
 
         if docker images --format '{{.Repository}}' | grep -q "testnet-"; then
             echo -e "${CYAN}检测到本地已存在 TestNet 镜像，正在尝试拉取更新...${NC}"
