@@ -6,7 +6,7 @@
 # 1. 确保工作目录始终为脚本所在目录 (支持从任意路径执行)
 cd "$(dirname "$(readlink -f "$0")")" || exit 1
 
-VERSION="v3.0.0beta" # 默认显示版本号，实际会从远程获取
+VERSION="v3.0.0" # 默认版本号
 VERSION_URL=""
 DOWNLOAD_BASE_URL=""
 SELECTED_REGISTRY_URL="testnet0/"
@@ -24,26 +24,32 @@ detect_sources() {
     local CNB_BASE_URL="https://cnb.cool/testnet0/testnet-public/-/git/raw/main"
     local GITHUB_BASE_URL="https://raw.githubusercontent.com/testnet0/testnet/main"
     
-    echo -e "${CYAN}正在通过网络探测选择最优源...${NC}"
+    echo -e "${CYAN}正在测试网络环境...${NC}"
+    echo -n -e "  - 探测 CNB 国内节点 (cnb.cool) ... "
     
     local cnb_status=""
     if command -v curl >/dev/null 2>&1; then
-        cnb_status=$(curl -o /dev/null -s -w "%{http_code}" --connect-timeout 5 -m 8 "$CNB_BASE_URL/version.yml")
+        cnb_status=$(curl -o /dev/null -s -w "%{http_code}" --connect-timeout 3 -m 5 "$CNB_BASE_URL/version.yml")
     elif command -v wget >/dev/null 2>&1; then
-        cnb_status=$(wget --spider --timeout=5 --tries=1 "$CNB_BASE_URL/version.yml" >/dev/null 2>&1 && echo "200" || echo "000")
+        cnb_status=$(wget --spider --timeout=3 --tries=1 "$CNB_BASE_URL/version.yml" >/dev/null 2>&1 && echo "200" || echo "000")
     fi
 
     if [ "$cnb_status" = "200" ]; then
+        echo -e "${GREEN}连通正常 (HTTP 200)${NC}"
+        PROBED_CHOICE="2"
+        PROBED_DESC="阿里云 (Alibaba Cloud - 中国加速)"
         DOWNLOAD_BASE_URL="$CNB_BASE_URL"
         VERSION_URL="$CNB_BASE_URL/version.yml"
         SELECTED_REGISTRY_URL="registry.cn-hangzhou.aliyuncs.com/testnet0/"
-        echo -e "${GREEN}[√] 已选择国内节点 (CNB)，将自动使用阿里云镜像源。${NC}"
     else
+        echo -e "${YELLOW}连接较慢或不可达${NC}"
+        PROBED_CHOICE="1"
+        PROBED_DESC="DockerHub (Docker Hub 源)"
         DOWNLOAD_BASE_URL="$GITHUB_BASE_URL"
         VERSION_URL="$GITHUB_BASE_URL/version.yml"
         SELECTED_REGISTRY_URL="testnet0/"
-        echo -e "${GREEN}[√] 已选择国际节点 (GitHub)，将自动使用 DockerHub 默认源。${NC}"
     fi
+    echo -e "${GREEN}[√] 网络探测完成，推荐使用: ${PROBED_CHOICE}) ${PROBED_DESC}${NC}\n"
 }
 
 # 获取远程最新版本号 (兼容 YAML 冒号格式)
@@ -203,6 +209,136 @@ generate_admin_password() {
     fi
 }
 
+# 自动感知局域网 IP (多层降级: hostname -I -> ip -> ifconfig -> python3 -> 127.0.0.1)
+get_host_ip() {
+    local host_ip=""
+    local OS_TYPE=$(uname -s 2>/dev/null)
+
+    # 1. Linux 优先尝试 hostname -I
+    if [ "$OS_TYPE" = "Linux" ] && command -v hostname >/dev/null 2>&1; then
+        host_ip=$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -E '^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)' | head -n 1)
+    fi
+
+    # 2. 尝试 iproute2
+    if [ -z "$host_ip" ] && command -v ip >/dev/null 2>&1; then
+        host_ip=$(ip -4 addr show 2>/dev/null | grep -oP 'inet \K\S+' | grep -E '^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)' | head -n 1)
+    fi
+
+    # 3. 尝试 ifconfig (macOS / BSD 降级)
+    if [ -z "$host_ip" ] && command -v ifconfig >/dev/null 2>&1; then
+        host_ip=$(ifconfig 2>/dev/null | grep -E 'inet ' | awk '{print $2}' | tr -d 'addr:' | grep -E '^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)' | head -n 1)
+    fi
+
+    # 4. 尝试 Python3 原生套接字降级
+    if [ -z "$host_ip" ] && command -v python3 >/dev/null 2>&1; then
+        host_ip=$(python3 -c "import socket; print(socket.gethostbyname(socket.gethostname()))" 2>/dev/null | grep -E '^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)')
+    fi
+
+    # 5. 兜底地址
+    if [ -z "$host_ip" ]; then
+        host_ip="127.0.0.1"
+    fi
+    echo "$host_ip"
+}
+
+# 端口占用检测 (多层降级: ss -> netstat -> lsof -> bash /dev/tcp)
+check_port_conflict() {
+    local port=${1:-3100}
+    local port_occupied=false
+    
+    # 1. 尝试使用 ss (Linux 推荐，非 root 可用)
+    if command -v ss >/dev/null 2>&1; then
+        if ss -tuln 2>/dev/null | grep -E -q ":$port\b"; then
+            port_occupied=true
+        fi
+    # 2. 尝试使用 netstat (跨平台，非 root 可用)
+    elif command -v netstat >/dev/null 2>&1; then
+        if netstat -tuln 2>/dev/null | grep -E -q ":$port\b"; then
+            port_occupied=true
+        fi
+    # 3. 尝试使用 lsof (macOS / Linux)
+    elif command -v lsof >/dev/null 2>&1; then
+        if lsof -i :$port -sTCP:LISTEN >/dev/null 2>&1; then
+            port_occupied=true
+        fi
+    # 4. 纯 Bash 原生 Socket 连接探测兜底 (零外部依赖，非 root 100% 可用)
+    elif (echo >/dev/tcp/127.0.0.1/$port) >/dev/null 2>&1; then
+        port_occupied=true
+    fi
+
+    if [ "$port_occupied" = "true" ]; then
+        if command -v docker >/dev/null 2>&1 && docker ps --format '{{.Names}}' 2>/dev/null | grep -q "testnet-web"; then
+            echo -e "${CYAN}检测到端口 ${port} 正由已运行的 TestNet 容器使用。${NC}"
+        else
+            echo -e "${RED}错误: 端口 ${port} 已被宿主机其他服务占用，无法继续安装！${NC}"
+            echo -e "${YELLOW}请先停止占用该端口的服务，或修改映射端口后重试。${NC}"
+            exit 1
+        fi
+    fi
+}
+
+# 资源与磁盘空间检测 (兼容 Linux 与 macOS)
+check_resources() {
+    local OS_TYPE=$(uname -s 2>/dev/null)
+    local total_mem=""
+
+    # 1. Linux 内存检测
+    if [ "$OS_TYPE" = "Linux" ] && [ -f /proc/meminfo ]; then
+        total_mem=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo 2>/dev/null)
+    # 2. macOS 内存检测
+    elif [ "$OS_TYPE" = "Darwin" ] && command -v sysctl >/dev/null 2>&1; then
+        local bytes=$(sysctl -n hw.memsize 2>/dev/null)
+        if [ -n "$bytes" ]; then
+            total_mem=$((bytes / 1024 / 1024))
+        fi
+    fi
+
+    if [ -n "$total_mem" ] && [ "$total_mem" -gt 0 ] && [ "$total_mem" -lt 1500 ]; then
+        echo -e "${YELLOW}警告: 当前物理内存较低 (${total_mem}MB)，建议至少配置 1.5GB 内存。${NC}"
+    fi
+
+    # 磁盘检测 (使用 POSIX 标准 df -k，兼容 Linux 与 macOS)
+    local free_disk_kb=""
+    free_disk_kb=$(df -k . 2>/dev/null | tail -1 | awk '{print $4}')
+    if [ -n "$free_disk_kb" ] && [[ "$free_disk_kb" =~ ^[0-9]+$ ]]; then
+        local free_disk_gb=$((free_disk_kb / 1024 / 1024))
+        if [ "$free_disk_gb" -lt 2 ]; then
+            echo -e "${YELLOW}警告: 当前磁盘可用空间较低 (${free_disk_gb}GB)，建议保留至少 2GB 磁盘空间。${NC}"
+        fi
+    fi
+}
+
+# 容器服务健康等待
+wait_for_health() {
+    echo -e "${CYAN}正在等待 TestNet 核心服务完成初始化...${NC}"
+    local max_attempts=25
+    local attempt=0
+    local healthy=false
+    
+    while [ $attempt -lt $max_attempts ]; do
+        local server_status=""
+        if command -v docker >/dev/null 2>&1; then
+            server_status=$(docker inspect --format='{{json .State.Health.Status}}' testnet-server 2>/dev/null | tr -d '"')
+        fi
+        
+        if [ "$server_status" = "healthy" ]; then
+            healthy=true
+            break
+        fi
+        
+        attempt=$((attempt + 1))
+        echo -n "."
+        sleep 2
+    done
+    echo ""
+    
+    if [ "$healthy" = "true" ]; then
+        echo -e "${GREEN}[√] TestNet 核心服务已成功初始化并就绪。${NC}"
+    else
+        echo -e "${YELLOW}服务已启动，后台正继续加载数据库与配置...${NC}"
+    fi
+}
+
 # 检查环境函数
 check_env() {
     echo -e "${CYAN}Checking environment...${NC}"
@@ -211,7 +347,10 @@ check_env() {
         exit 1
     fi
     if ! docker info >/dev/null 2>&1; then
-        echo -e "${RED}Error: Docker daemon is not running.${NC}"
+        echo -e "${RED}Error: Cannot connect to Docker daemon.${NC}"
+        echo -e "${YELLOW}如果以非 root 用户运行，请确认 Docker 服务已启动且当前用户已加入 docker 用户组：${NC}"
+        echo -e "${YELLOW}  sudo usermod -aG docker \$USER && newgrp docker${NC}"
+        echo -e "${YELLOW}或者尝试使用 sudo 执行此脚本。${NC}"
         exit 1
     fi
     DOCKER_COMPOSE_CMD=""
@@ -223,6 +362,9 @@ check_env() {
         echo -e "${RED}Error: Docker Compose is not installed.${NC}"
         exit 1
     fi
+
+    check_resources
+    check_port_conflict 3100
 }
 
 # 检查上一条指令的状态，失败时可选打印日志
@@ -322,25 +464,36 @@ case "$1" in
             esac
             SELECTED_REGISTRY_URL="$REGISTRY_URL"
         else
-            local default_choice="1"
-            if [ "$SELECTED_REGISTRY_URL" = "registry.cn-hangzhou.aliyuncs.com/testnet0/" ]; then
-                default_choice="2"
-            fi
+            default_choice="${PROBED_CHOICE:-1}"
+            default_desc="${PROBED_DESC:-DockerHub (Docker Hub 源)}"
             
             echo -e "${CYAN}请选择镜像源 (Choose Mirror Source):${NC}"
-            echo "1) DockerHub (默认 - 官方同步最及时)"
+            echo -e "网络探测推荐: ${GREEN}${default_choice}) ${default_desc}${NC}"
+            echo "1) DockerHub (Docker Hub 源)"
             echo "2) 阿里云 (Alibaba Cloud - 中国加速)"
-            read -p "请输入选项 [1-2, 默认$default_choice]: " registry_choice
-            registry_choice="${registry_choice:-$default_choice}"
+            
+            registry_choice=""
+            echo -n -e "${YELLOW}请输入选项 [1-2, 默认$default_choice] (10秒内未输入将自动使用推荐源): ${NC}"
+            read -t 10 registry_choice || true
+            echo ""
+            
+            if [ -z "$registry_choice" ]; then
+                registry_choice="$default_choice"
+                echo -e "${GREEN}[√] 10秒超时未输入，已自动采用推荐源: ${registry_choice}) ${default_desc}${NC}"
+            else
+                echo -e "${GREEN}[√] 您已手动选择: ${registry_choice}${NC}"
+            fi
             
             case "$registry_choice" in
                 2)
                     SELECTED_REGISTRY_URL="registry.cn-hangzhou.aliyuncs.com/testnet0/"
-                    echo -e "${GREEN}已选择阿里云镜像源。${NC}"
+                    DOWNLOAD_BASE_URL="https://cnb.cool/testnet0/testnet-public/-/git/raw/main"
+                    VERSION_URL="https://cnb.cool/testnet0/testnet-public/-/git/raw/main/version.yml"
                     ;;
                 *)
                     SELECTED_REGISTRY_URL="testnet0/"
-                    echo -e "${GREEN}已选择 DockerHub 默认源 (testnet0/)。${NC}"
+                    DOWNLOAD_BASE_URL="https://raw.githubusercontent.com/testnet0/testnet/main"
+                    VERSION_URL="https://raw.githubusercontent.com/testnet0/testnet/main/version.yml"
                     ;;
             esac
         fi
@@ -348,6 +501,7 @@ case "$1" in
         if [ ! -f .env ]; then
             echo -e "${YELLOW}Creating .env file with dynamic secrets...${NC}"
             ADMIN_PASSWORD=$(generate_admin_password 16)
+            DEFAULT_NODE_NAME="Node-$(hostname 2>/dev/null || echo 'Default')"
             echo "DB_ROOT_PASSWORD=$(generate_random_string)" > .env
             echo "REDIS_PASSWORD=$(generate_random_string)" >> .env
             echo "JWT_SECRET=$(generate_random_string)" >> .env
@@ -356,6 +510,7 @@ case "$1" in
             echo "DOCKER_REGISTRY=$SELECTED_REGISTRY_URL" >> .env
             echo "CORS_ALLOWED_ORIGINS=*" >> .env
             echo "TESTNET_VERSION=$VERSION" >> .env
+            echo "TESTNET_NODE_NAME=${DEFAULT_NODE_NAME}" >> .env
             echo -e "${GREEN}New secrets and version generated.${NC}"
         else
             echo -e "${CYAN}Using existing .env configuration.${NC}"
@@ -382,6 +537,11 @@ case "$1" in
                 echo -e "${GREEN}Added CORS_ALLOWED_ORIGINS to .env (default: *).${NC}"
                 echo -e "${YELLOW}  如果通过域名访问，请编辑 .env 中的 CORS_ALLOWED_ORIGINS 为实际地址。${NC}"
             fi
+            if ! grep -q "TESTNET_NODE_NAME" .env; then
+                DEFAULT_NODE_NAME="Node-$(hostname 2>/dev/null || echo 'Default')"
+                echo "TESTNET_NODE_NAME=${DEFAULT_NODE_NAME}" >> .env
+                echo -e "${GREEN}Added TESTNET_NODE_NAME to .env (${DEFAULT_NODE_NAME}).${NC}"
+            fi
             if ! grep -q "ADMIN_INIT_PASSWORD" .env; then
                 ADMIN_PASSWORD=$(generate_admin_password 16)
                 echo "ADMIN_INIT_PASSWORD=${ADMIN_PASSWORD}" >> .env
@@ -398,20 +558,31 @@ case "$1" in
             export OFFICIAL_REGISTRY="$DOCKER_REGISTRY"
         fi
 
-        if docker images --format '{{.Repository}}' | grep -q "testnet-"; then
-            echo -e "${CYAN}检测到本地已存在 TestNet 镜像，正在尝试拉取更新...${NC}"
-            $DOCKER_COMPOSE_CMD pull
-            if [ $? -ne 0 ]; then
-                echo -e "${YELLOW}警告: 拉取最新镜像失败，将尝试使用本地现有镜像启动。${NC}"
-            fi
+        echo -e "${CYAN}正在拉取最新 Docker 镜像...${NC}"
+        $DOCKER_COMPOSE_CMD pull
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}错误: 拉取 Docker 镜像失败！${NC}"
+            echo -e "${YELLOW}请检查网络连接或重新运行脚本选择其他镜像源 (如 阿里云源) 后重试。${NC}"
+            exit 1
         fi
 
         echo -e "${CYAN}Launching containers...${NC}"
-        $DOCKER_COMPOSE_CMD up -d
-        check_status "Container launch" "true"
+        if ! $DOCKER_COMPOSE_CMD up -d; then
+            echo -e "${YELLOW}检测到重名的旧容器冲突，正在自动清理残留容器重试...${NC}"
+            docker rm -f testnet-redis testnet-db testnet-server testnet-web testnet-client 2>/dev/null || true
+            $DOCKER_COMPOSE_CMD up -d
+            check_status "Container launch" "true"
+        fi
         
+        wait_for_health
+        
+        host_ip=$(get_host_ip)
         echo -e "${GREEN}TestNet installed successfully!${NC}"
-        echo -e "${CYAN}Access URL: https://localhost:3100${NC}"
+        echo -e "${CYAN}Access URL:${NC}"
+        if [ "$host_ip" != "127.0.0.1" ] && [ "$host_ip" != "localhost" ]; then
+            echo -e "${CYAN}  - 局域网访问: https://${host_ip}:3100${NC}"
+        fi
+        echo -e "${CYAN}  - 本地访问:   https://localhost:3100${NC}"
         echo ""
         echo -e "${YELLOW}========================================${NC}"
         echo -e "${YELLOW}  Admin Account Credentials${NC}"
@@ -475,15 +646,21 @@ case "$1" in
         fi
         export TESTNET_VERSION="$VERSION"
 
-        echo -e "${CYAN}Pulling latest images...${NC}"
+        echo -e "${CYAN}正在拉取最新 Docker 镜像...${NC}"
         $DOCKER_COMPOSE_CMD pull
         if [ $? -ne 0 ]; then
-            echo -e "${YELLOW}Warning: Pull failed. Trying to start with local images...${NC}"
+            echo -e "${RED}错误: 拉取 Docker 镜像失败！${NC}"
+            echo -e "${YELLOW}请检查网络连接或重新运行脚本选择其他镜像源后重试。${NC}"
+            exit 1
         fi
         
         echo -e "${CYAN}Updating and rebuilding...${NC}"
-        $DOCKER_COMPOSE_CMD up -d --remove-orphans
-        check_status "Update"
+        if ! $DOCKER_COMPOSE_CMD up -d --remove-orphans; then
+            echo -e "${YELLOW}检测到重名的旧容器冲突，正在自动清理残留容器重试...${NC}"
+            docker rm -f testnet-redis testnet-db testnet-server testnet-web testnet-client 2>/dev/null || true
+            $DOCKER_COMPOSE_CMD up -d --remove-orphans
+            check_status "Update"
+        fi
         
         echo -e "${GREEN}TestNet updated and started.${NC}"
         ;;
