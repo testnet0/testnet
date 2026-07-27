@@ -354,7 +354,7 @@ case "$1" in
             echo "TESTNET_CLIENT_SECRET=$(generate_random_string)" >> .env
             echo "ADMIN_INIT_PASSWORD=${ADMIN_PASSWORD}" >> .env
             echo "DOCKER_REGISTRY=$SELECTED_REGISTRY_URL" >> .env
-            echo "CORS_ALLOWED_ORIGINS=https://*:*" >> .env
+            echo "CORS_ALLOWED_ORIGINS=*" >> .env
             echo "TESTNET_VERSION=$VERSION" >> .env
             echo -e "${GREEN}New secrets and version generated.${NC}"
         else
@@ -378,8 +378,8 @@ case "$1" in
                 echo "TESTNET_VERSION=$VERSION" >> .env
             fi
             if ! grep -q "CORS_ALLOWED_ORIGINS" .env; then
-                echo "CORS_ALLOWED_ORIGINS=https://*:*" >> .env
-                echo -e "${GREEN}Added CORS_ALLOWED_ORIGINS to .env (default: https://*:*).${NC}"
+                echo "CORS_ALLOWED_ORIGINS=*" >> .env
+                echo -e "${GREEN}Added CORS_ALLOWED_ORIGINS to .env (default: *).${NC}"
                 echo -e "${YELLOW}  如果通过域名访问，请编辑 .env 中的 CORS_ALLOWED_ORIGINS 为实际地址。${NC}"
             fi
             if ! grep -q "ADMIN_INIT_PASSWORD" .env; then

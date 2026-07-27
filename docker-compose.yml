@@ -70,7 +70,7 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       JWT_SECRET: ${JWT_SECRET}
       TESTNET_CLIENT_SECRET: ${TESTNET_CLIENT_SECRET}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://*:*}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
       ADMIN_INIT_PASSWORD: ${ADMIN_INIT_PASSWORD:-}
       TESTNET_LICENSE_FILE: ${TESTNET_LICENSE_FILE:-/app/.license/license.lic}
       TESTNET_LICENSE_PUBLIC_KEY: ${TESTNET_LICENSE_PUBLIC_KEY:-}
@@ -148,6 +148,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./client-data:/opt/testnet/client-data
       - ./client-work:/opt/testnet/client-work
+      - /tmp:/tmp
     depends_on:
       testnet-server:
         condition: service_healthy
