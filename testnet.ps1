@@ -4,7 +4,7 @@
 # 确保工作目录始终为脚本所在目录 (支持从任意路径执行)
 Set-Location $PSScriptRoot
 
-$Version = "v3.0.0" # 默认版本号，实际会从远程获取
+$Version = "v3.0.1" # 默认版本号，实际会从远程获取
 $VersionUrl = ""
 $DownloadBaseUrl = ""
 $SelectedRegistryUrl = "testnet0/"

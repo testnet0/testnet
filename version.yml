@@ -1,6 +1,6 @@
-version: v3.0.0
+version: v3.0.1
 files:
-  - testnet.sh:282ab3561a645dd75275cf258c6c0fc9
+  - testnet.sh:be13a1b85f1ae94e3c08aa4f021c4ca0
   - docker-compose.yml:a04e17ab40282140ff8d07196628a631
   - testnet-pg.sql:84b0394bc6ae5fc58bb16263523487e2
   - nginx.conf:cf5dc98003fe0eda0cab886218c5c87d
