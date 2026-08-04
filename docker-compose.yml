@@ -164,6 +164,7 @@ services:
         max-file: "3"
     networks:
       - testnet-backend
+      - testnet-frontend
 
 volumes:
   testnet-db-data:
