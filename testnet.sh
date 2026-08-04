@@ -6,7 +6,7 @@
 # 1. 确保工作目录始终为脚本所在目录 (支持从任意路径执行)
 cd "$(dirname "$(readlink -f "$0")")" || exit 1
 
-VERSION="v3.0.2" # 默认版本号
+VERSION="v3.0.3" # 默认版本号
 VERSION_URL=""
 DOWNLOAD_BASE_URL=""
 SELECTED_REGISTRY_URL="testnet0/"
@@ -620,12 +620,16 @@ case "$1" in
         ;;
     update)
         load_env_vars "$1"
+        # 捕获本地已安装版本，必须在 fetch_latest_version 之前读取：
+        # fetch_latest_version 会 export TESTNET_VERSION=$VERSION（远端版本），
+        # 若在此之后读取 local_version，则 VERSION == local_version 恒成立，
+        # 导致 sync_latest_files 永不触发，配置文件（docker-compose.yml 等）无法同步。
+        local_version="${TESTNET_VERSION:-}"
         fetch_latest_version
         check_env
         check_certs
 
         # 自动同步配置文件并更新脚本
-        local_version="${TESTNET_VERSION:-}"
         if [ "$VERSION" != "$local_version" ]; then
             sync_latest_files "$@"
         fi
