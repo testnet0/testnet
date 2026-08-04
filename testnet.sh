@@ -99,7 +99,7 @@ check_certs() {
 
 # 同步最新配置文件并执行脚本自更新
 sync_latest_files() {
-    echo -e "${CYAN}正在同步最新配置文件与管理脚本...${NC}"
+    echo -e "${CYAN}正在检查配置文件与管理脚本更新...${NC}"
     local tmp_version_file="version.yml.tmp"
     
     if command -v curl >/dev/null 2>&1; then
@@ -123,17 +123,41 @@ sync_latest_files() {
         return 0
     fi
 
+    # 计算 LOCAL 文件 MD5（兼容 Linux md5sum 与 BSD/macOS md5）
+    _local_md5() {
+        [ -f "$1" ] || { echo ""; return; }
+        if command -v md5sum >/dev/null 2>&1; then
+            md5sum "$1" | cut -d' ' -f1
+        elif command -v md5 >/dev/null 2>&1; then
+            md5 -q "$1"
+        else
+            echo ""
+        fi
+    }
+
     local self_updated=false
     for entry in "${files_to_sync[@]}"; do
         local file=$(echo "$entry" | cut -d':' -f1)
         local expected_md5=$(echo "$entry" | cut -d':' -f2)
+
+        # 清单中没有哈希的条目（如 version.yml 自身）跳过
+        if [ -z "$expected_md5" ] || [ "$expected_md5" = "$file" ]; then
+            continue
+        fi
+
+        # 增量同步：本地 MD5 已与远端一致则跳过下载
+        local local_md5=$(_local_md5 "$file")
+        if [ -n "$local_md5" ] && [ "$local_md5" = "$expected_md5" ]; then
+            echo -e "  $file: ${GREEN}已是最新${NC}"
+            continue
+        fi
 
         local dir_part=$(dirname "$file")
         if [ "$dir_part" != "." ]; then
             mkdir -p "$dir_part"
         fi
 
-        echo -n -e "正在拉取 $file ... "
+        echo -n -e "  正在拉取 $file ... "
         local download_success=false
         if command -v curl >/dev/null 2>&1; then
             curl -s -L --connect-timeout 5 -m 10 "$DOWNLOAD_BASE_URL/$file" -o "${file}.tmp" && download_success=true
@@ -142,20 +166,12 @@ sync_latest_files() {
         fi
 
         if [ "$download_success" = "true" ] && [ -f "${file}.tmp" ] && ! grep -qE "^\{|^<html>" "${file}.tmp"; then
-            # 校验 MD5 哈希 (如果清单提供了哈希值)
-            if [ -n "$expected_md5" ] && [ "$expected_md5" != "$file" ]; then
-                local downloaded_md5=""
-                if command -v md5sum >/dev/null 2>&1; then
-                    downloaded_md5=$(md5sum "${file}.tmp" | cut -d' ' -f1)
-                elif command -v md5 >/dev/null 2>&1; then
-                    downloaded_md5=$(md5 -q "${file}.tmp")
-                fi
-                
-                if [ -n "$downloaded_md5" ] && [ "$downloaded_md5" != "$expected_md5" ]; then
-                    echo -e "${RED}失败 (MD5 不匹配: 期望 $expected_md5，实际 $downloaded_md5)${NC}"
-                    rm -f "${file}.tmp"
-                    continue
-                fi
+            # 完整性校验：下载后的 MD5 必须与远端期望一致
+            local downloaded_md5=$(_local_md5 "${file}.tmp")
+            if [ -n "$downloaded_md5" ] && [ "$downloaded_md5" != "$expected_md5" ]; then
+                echo -e "${RED}失败 (MD5 不匹配: 期望 $expected_md5，实际 $downloaded_md5)${NC}"
+                rm -f "${file}.tmp"
+                continue
             fi
 
             mv "${file}.tmp" "$file"
@@ -183,7 +199,7 @@ sync_latest_files() {
         fi
     fi
 
-    # 如果自身脚本被更新，立即重载执行
+    # 如果自身脚本被更新，立即重载执行（自更新能力）
     if [ "$self_updated" = "true" ]; then
         echo -e "${GREEN}管理脚本已完成自我更新，正在重新加载执行...${NC}"
         exec bash "$0" "$@"
@@ -620,19 +636,14 @@ case "$1" in
         ;;
     update)
         load_env_vars "$1"
-        # 捕获本地已安装版本，必须在 fetch_latest_version 之前读取：
-        # fetch_latest_version 会 export TESTNET_VERSION=$VERSION（远端版本），
-        # 若在此之后读取 local_version，则 VERSION == local_version 恒成立，
-        # 导致 sync_latest_files 永不触发，配置文件（docker-compose.yml 等）无法同步。
-        local_version="${TESTNET_VERSION:-}"
         fetch_latest_version
         check_env
         check_certs
 
-        # 自动同步配置文件并更新脚本
-        if [ "$VERSION" != "$local_version" ]; then
-            sync_latest_files "$@"
-        fi
+        # 总是检查并同步配置文件与管理脚本（按文件 MD5 增量同步，已是最新则跳过）。
+        # 即使版本号未变，只要 testnet.sh / docker-compose.yml 等任一文件 MD5 变化，
+        # 即自动拉取并在 testnet.sh 自更新后重载执行，保证修复可经 update 下发。
+        sync_latest_files "$@"
 
         load_env_vars "$1" # 同步后再次加载可能被修改的环境变量
 
