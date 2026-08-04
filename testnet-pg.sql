@@ -240,16 +240,6 @@ VALUES (
         1
     ),
     (
-        'sys-storage-path',
-        'sys.storage.path',
-        '/app/uploads/config-files',
-        '存储路径',
-        'STORAGE',
-        'string',
-        '本地文件存储基础路径',
-        1
-    ),
-    (
         'sys-storage-type',
         'sys.storage.type',
         'LOCAL',
