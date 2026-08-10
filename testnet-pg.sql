@@ -1126,6 +1126,7 @@ CREATE TABLE IF NOT EXISTS testnet_client (
     uptime bigint DEFAULT NULL,
     client_config text DEFAULT NULL,
     config_version int DEFAULT 0,
+    allowed_tool_keys jsonb DEFAULT NULL,
     PRIMARY KEY (id)
     );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_testnet_client_client_name ON testnet_client (client_name);
