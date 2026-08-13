@@ -860,6 +860,7 @@ CREATE TABLE IF NOT EXISTS testnet_asset_task (
     origin_asset_ids jsonb DEFAULT NULL,
     target_asset_mapping jsonb DEFAULT NULL,
     target_field varchar(64) DEFAULT NULL,
+    dsl_timeout_seconds int DEFAULT 0,
     PRIMARY KEY (id)
     );
 CREATE UNIQUE INDEX IF NOT EXISTS uk_task_job_dedupe ON testnet_asset_task (job_id, dedupe_key);
