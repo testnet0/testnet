@@ -1169,6 +1169,10 @@ CREATE TABLE IF NOT EXISTS testnet_client_tool_version (
     PRIMARY KEY (id)
 );
 
+-- High-17: (tool_id, version) 唯一索引, 防止并发版本分配产生重复行.
+CREATE UNIQUE INDEX IF NOT EXISTS uk_tool_version_tool_id_version
+    ON testnet_client_tool_version (tool_id, version);
+
 DROP TABLE IF EXISTS testnet_config_file CASCADE;
 
 CREATE TABLE IF NOT EXISTS testnet_config_file (
