@@ -783,6 +783,26 @@ CREATE TABLE IF NOT EXISTS testnet_asset_search_engine (
     PRIMARY KEY (id)
 );
 
+DROP TABLE IF EXISTS testnet_search_history CASCADE;
+
+CREATE TABLE IF NOT EXISTS testnet_search_history (
+    id varchar(64) NOT NULL,
+    engine_id varchar(64) DEFAULT NULL,
+    engine_type varchar(64) DEFAULT NULL,
+    engine_name varchar(64) DEFAULT NULL,
+    keyword varchar(2048) NOT NULL,
+    result_count bigint DEFAULT 0,
+    page_no int DEFAULT 1,
+    page_size int DEFAULT 20,
+    result_snapshot jsonb DEFAULT NULL,
+    created_by varchar(64) DEFAULT NULL,
+    created_time timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);
+CREATE INDEX IF NOT EXISTS idx_search_history_created_time ON testnet_search_history (created_time DESC);
+CREATE INDEX IF NOT EXISTS idx_search_history_engine_type ON testnet_search_history (engine_type);
+CREATE INDEX IF NOT EXISTS idx_search_history_created_by ON testnet_search_history (created_by);
+
 DROP TABLE IF EXISTS testnet_asset_sub_domain CASCADE;
 
 CREATE TABLE IF NOT EXISTS testnet_asset_sub_domain (
@@ -3802,6 +3822,16 @@ VALUES (
         'INACTIVE',
         'admin',
         NOW()
+    ),
+    (
+        'menu-054',
+        'search:history',
+        '搜索历史',
+        'MENU',
+        'menu-050',
+        'ACTIVE',
+        'admin',
+        NOW()
     )
 ON CONFLICT DO NOTHING;
 
@@ -4670,6 +4700,24 @@ VALUES (
         'search:syntax:edit',
         '编辑语法',
         'menu-053',
+        'ACTIVE',
+        'admin',
+        NOW()
+    ),
+    (
+        '3032',
+        'search:history:view',
+        '查看历史',
+        'menu-054',
+        'ACTIVE',
+        'admin',
+        NOW()
+    ),
+    (
+        '3033',
+        'search:history:delete',
+        '删除历史',
+        'menu-054',
         'ACTIVE',
         'admin',
         NOW()
