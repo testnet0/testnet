@@ -7,6 +7,4 @@ files:
   - gen-certs.sh:312349c434fc529f95f7ff21046a0f81
   - certs/server.crt:6464927556bf29b12098fa9b71dd2285
   - certs/server.key:9ea015174189a661ebbf4bb3da6b91f3
-  - skill.zip:aceb9e6c01570e050144bd4be7e00232
   - version.yml
-
