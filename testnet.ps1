@@ -382,6 +382,7 @@ switch ($action) {
                 "REDIS_PASSWORD=$(Generate-RandomString 32)",
                 "JWT_SECRET=$(Generate-RandomString 64)",
                 "TESTNET_CLIENT_SECRET=$(Generate-RandomString 32)",
+                "TESTNET_MCP_API_KEY=",
                 "ADMIN_INIT_PASSWORD=$adminPassword",
                 "DOCKER_REGISTRY=$selectedRegistry",
                 "CORS_ALLOWED_ORIGINS=*",

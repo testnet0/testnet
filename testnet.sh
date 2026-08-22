@@ -522,6 +522,7 @@ case "$1" in
             echo "REDIS_PASSWORD=$(generate_random_string)" >> .env
             echo "JWT_SECRET=$(generate_random_string)" >> .env
             echo "TESTNET_CLIENT_SECRET=$(generate_random_string)" >> .env
+            echo "TESTNET_MCP_API_KEY=" >> .env
             echo "ADMIN_INIT_PASSWORD=${ADMIN_PASSWORD}" >> .env
             echo "DOCKER_REGISTRY=$SELECTED_REGISTRY_URL" >> .env
             echo "CORS_ALLOWED_ORIGINS=*" >> .env

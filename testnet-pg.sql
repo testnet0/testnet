@@ -8138,3 +8138,143 @@ ALTER TABLE testnet_asset_api_tree ADD CONSTRAINT fk_api_tree_to_web FOREIGN KEY
 ALTER TABLE testnet_asset_api ADD CONSTRAINT fk_api_to_web_tree FOREIGN KEY (asset_web_tree_id) REFERENCES testnet_asset_api_tree (id) ON DELETE CASCADE ON UPDATE RESTRICT;
 
 ALTER TABLE testnet_task_execution_log ADD CONSTRAINT fk_execution_log_task FOREIGN KEY (task_id) REFERENCES testnet_asset_task (id) ON DELETE CASCADE ON UPDATE RESTRICT;
+
+-- ============================================================
+-- Engagement, HTTP Record and Decision Log tables
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS testnet_engagement (
+    id VARCHAR(64) PRIMARY KEY,
+    project_id VARCHAR(64) NOT NULL,
+    target_input VARCHAR(512) NOT NULL,
+    scope TEXT,
+    status VARCHAR(32) NOT NULL DEFAULT 'RUNNING',
+    started_at TIMESTAMP WITH TIME ZONE,
+    ended_at TIMESTAMP WITH TIME ZONE,
+    operator VARCHAR(64),
+    saturation_rationale TEXT,
+    summary TEXT,
+    create_by VARCHAR(64),
+    create_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    update_by VARCHAR(64),
+    update_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_engagement_project ON testnet_engagement(project_id);
+CREATE INDEX IF NOT EXISTS idx_engagement_status ON testnet_engagement(status);
+CREATE INDEX IF NOT EXISTS idx_engagement_started_at ON testnet_engagement(started_at);
+
+CREATE TABLE IF NOT EXISTS testnet_http_record (
+    id VARCHAR(64) PRIMARY KEY,
+    project_id VARCHAR(64),
+    engagement_id VARCHAR(64),
+    asset_id VARCHAR(64),
+    asset_type VARCHAR(32),
+    method VARCHAR(16) NOT NULL,
+    url TEXT NOT NULL,
+    req_headers TEXT,
+    req_body TEXT,
+    res_status INTEGER,
+    res_reason VARCHAR(64),
+    res_headers TEXT,
+    res_body TEXT,
+    duration_ms BIGINT,
+    sent_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    operator VARCHAR(64),
+    store_raw BOOLEAN DEFAULT TRUE,
+    error_message TEXT,
+    create_by VARCHAR(64),
+    create_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    update_by VARCHAR(64),
+    update_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_http_record_project ON testnet_http_record(project_id);
+CREATE INDEX IF NOT EXISTS idx_http_record_engagement ON testnet_http_record(engagement_id);
+CREATE INDEX IF NOT EXISTS idx_http_record_asset ON testnet_http_record(asset_id);
+CREATE INDEX IF NOT EXISTS idx_http_record_sent_at ON testnet_http_record(sent_at);
+
+CREATE TABLE IF NOT EXISTS testnet_decision_log (
+    id VARCHAR(64) PRIMARY KEY,
+    agent_decision_id VARCHAR(64) NOT NULL,
+    engagement_id VARCHAR(64) NOT NULL,
+    parent_id VARCHAR(64),
+    project_id VARCHAR(64),
+    asset_id VARCHAR(64),
+    target VARCHAR(512),
+    rationale TEXT NOT NULL,
+    action TEXT,
+    new_leads TEXT,
+    phase VARCHAR(32),
+    ts TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    author VARCHAR(64),
+    create_by VARCHAR(64),
+    create_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    update_by VARCHAR(64),
+    update_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    CONSTRAINT uk_engagement_agent_decision UNIQUE (engagement_id, agent_decision_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_decision_engagement ON testnet_decision_log(engagement_id);
+CREATE INDEX IF NOT EXISTS idx_decision_parent ON testnet_decision_log(parent_id);
+CREATE INDEX IF NOT EXISTS idx_decision_project ON testnet_decision_log(project_id);
+CREATE INDEX IF NOT EXISTS idx_decision_ts ON testnet_decision_log(ts);
+
+INSERT INTO sys_permission (id, permission_code, permission_name, resource_type, menu_id, status, create_by, create_time)
+VALUES
+    ('perm-eng-001', 'engagement:view', '查看渗透测试会话', 'MENU', 'menu-engagement', 'ACTIVE', 'system', CURRENT_TIMESTAMP),
+    ('perm-eng-002', 'engagement:edit', '管理渗透测试会话', 'BUTTON', 'menu-engagement', 'ACTIVE', 'system', CURRENT_TIMESTAMP),
+    ('perm-http-001', 'http-record:view', '查看HTTP流量记录', 'MENU', 'menu-http-record', 'ACTIVE', 'system', CURRENT_TIMESTAMP),
+    ('perm-http-002', 'http-record:export', '导出HAR流量文件', 'BUTTON', 'menu-http-record', 'ACTIVE', 'system', CURRENT_TIMESTAMP),
+    ('perm-http-003', 'http-record:delete', '删除HTTP流量记录', 'BUTTON', 'menu-http-record', 'ACTIVE', 'system', CURRENT_TIMESTAMP),
+    ('perm-dec-001', 'decision-log:view', '查看决策思考日志', 'BUTTON', 'menu-engagement', 'ACTIVE', 'system', CURRENT_TIMESTAMP),
+    ('perm-mcp-001', 'mcp:view', '查看MCP服务与技能', 'MENU', 'menu-mcp', 'ACTIVE', 'system', CURRENT_TIMESTAMP)
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO sys_role_permission (id, role_id, permission_id, create_by, create_time)
+SELECT '1-' || p.id, '1', p.id, 'system', CURRENT_TIMESTAMP
+FROM sys_permission p
+WHERE p.permission_code IN (
+    'engagement:view', 'engagement:edit',
+    'http-record:view', 'http-record:export', 'http-record:delete',
+    'decision-log:view', 'mcp:view'
+)
+ON CONFLICT (role_id, permission_id) DO NOTHING;
+
+-- ----------------------------
+-- Table structure for testnet_ai_memory
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS testnet_ai_memory (
+    id VARCHAR(64) PRIMARY KEY,
+    project_id VARCHAR(64),
+    memory_key VARCHAR(64) NOT NULL DEFAULT 'general',
+    title VARCHAR(128),
+    content TEXT NOT NULL,
+    create_by VARCHAR(64),
+    create_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    update_by VARCHAR(64),
+    update_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_memory_project ON testnet_ai_memory(project_id);
+CREATE INDEX IF NOT EXISTS idx_ai_memory_key ON testnet_ai_memory(memory_key);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_ai_memory_proj_key ON testnet_ai_memory(COALESCE(project_id, '__GLOBAL__'), memory_key) WHERE is_deleted = FALSE;
+
+-- RBAC Permissions for AI Memory
+INSERT INTO sys_permission (id, permission_code, permission_name, resource_type, menu_id, status, create_by, create_time)
+VALUES
+    ('perm-ai-mem-001', 'ai:memory:view', '查看AI记忆', 'MENU', 'menu-ai-mcp', 'ACTIVE', 'system', CURRENT_TIMESTAMP),
+    ('perm-ai-mem-002', 'ai:memory:edit', '编辑AI记忆', 'BUTTON', 'menu-ai-mcp', 'ACTIVE', 'system', CURRENT_TIMESTAMP)
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO sys_role_permission (id, role_id, permission_id, create_by, create_time)
+SELECT '1-' || p.id, '1', p.id, 'system', CURRENT_TIMESTAMP
+FROM sys_permission p
+WHERE p.permission_code IN ('ai:memory:view', 'ai:memory:edit')
+ON CONFLICT (role_id, permission_id) DO NOTHING;
+
+
