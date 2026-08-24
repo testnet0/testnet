@@ -1,4 +1,4 @@
-version: v3.0.2
+version: v3.0.3
 files:
   - testnet.sh:ba8eb3241fd5929ee871eb69234cb88a
   - docker-compose.yml:2fafc018a067fa257b2ff8bf466df312
