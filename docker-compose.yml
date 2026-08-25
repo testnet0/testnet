@@ -61,7 +61,7 @@ services:
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      DB_URL: jdbc:postgresql://db:5432/testnet?stringtype=unspecified
+      DB_URL: jdbc:postgresql://db:5432/testnet?stringtype=unspecified&reWriteBatchedInserts=true
       DB_USERNAME: ${DB_USERNAME:-testnet}
       DB_PASSWORD: ${DB_ROOT_PASSWORD}
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver

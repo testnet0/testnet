@@ -1199,30 +1199,6 @@ CREATE INDEX IF NOT EXISTS idx_config_file_status ON testnet_config_file (status
 CREATE INDEX IF NOT EXISTS idx_config_file_hash ON testnet_config_file (content_hash);
 CREATE INDEX IF NOT EXISTS idx_config_file_create_by ON testnet_config_file (create_by);
 
-DROP TABLE IF EXISTS testnet_domain_event CASCADE;
-
-CREATE TABLE IF NOT EXISTS testnet_domain_event (
-    id varchar(64) NOT NULL,
-    event_id varchar(64) NOT NULL,
-    event_type varchar(64) NOT NULL,
-    aggregate_type varchar(64) NOT NULL,
-    aggregate_id varchar(64) NOT NULL,
-    payload jsonb DEFAULT NULL,
-    metadata jsonb DEFAULT NULL,
-    status varchar(20) DEFAULT 'PENDING',
-    retry_count int DEFAULT 0,
-    max_retries int DEFAULT 3,
-    next_retry_at timestamp DEFAULT NULL,
-    error_message text,
-    processed_at timestamp DEFAULT NULL,
-    created_at timestamp DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
-    );
-CREATE UNIQUE INDEX IF NOT EXISTS uk_event_id ON testnet_domain_event (event_id);
-CREATE INDEX IF NOT EXISTS idx_testnet_domain_event_status_retry ON testnet_domain_event (status, next_retry_at);
-CREATE INDEX IF NOT EXISTS idx_testnet_domain_event_aggregate ON testnet_domain_event (aggregate_type, aggregate_id);
-CREATE INDEX IF NOT EXISTS idx_testnet_domain_event_event_type ON testnet_domain_event (event_type);
-
 DROP TABLE IF EXISTS testnet_file_storage CASCADE;
 
 CREATE TABLE IF NOT EXISTS testnet_file_storage (
@@ -8097,7 +8073,6 @@ ON CONFLICT DO NOTHING;
 -- Extracted indexes from CREATE TABLE (for load-order safety)
 CREATE INDEX IF NOT EXISTS idx_testnet_asset_task_retry ON testnet_asset_task (task_status, retry_count, max_retries, last_retry_time);
 CREATE INDEX IF NOT EXISTS idx_testnet_asset_task_project_hash_status ON testnet_asset_task (project_id, params_hash, task_status);
-CREATE INDEX IF NOT EXISTS idx_testnet_domain_event_aggregate ON testnet_domain_event (aggregate_type, aggregate_id);
 
 -- ============================================================
 -- Foreign Key constraints (moved to end for load-order safety)
