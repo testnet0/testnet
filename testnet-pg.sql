@@ -8205,6 +8205,7 @@ VALUES
     ('perm-http-001', 'http-record:view', '查看HTTP流量记录', 'MENU', 'menu-http-record', 'ACTIVE', 'system', CURRENT_TIMESTAMP),
     ('perm-http-002', 'http-record:export', '导出HAR流量文件', 'BUTTON', 'menu-http-record', 'ACTIVE', 'system', CURRENT_TIMESTAMP),
     ('perm-http-003', 'http-record:delete', '删除HTTP流量记录', 'BUTTON', 'menu-http-record', 'ACTIVE', 'system', CURRENT_TIMESTAMP),
+    ('perm-http-004', 'http-record:relay', '发起HTTP中继请求', 'BUTTON', 'menu-http-record', 'ACTIVE', 'system', CURRENT_TIMESTAMP),
     ('perm-dec-001', 'decision-log:view', '查看决策思考日志', 'BUTTON', 'menu-engagement', 'ACTIVE', 'system', CURRENT_TIMESTAMP),
     ('perm-mcp-001', 'mcp:view', '查看MCP服务与技能', 'MENU', 'menu-mcp', 'ACTIVE', 'system', CURRENT_TIMESTAMP)
 ON CONFLICT (permission_code) DO NOTHING;
@@ -8214,7 +8215,7 @@ SELECT '1-' || p.id, '1', p.id, 'system', CURRENT_TIMESTAMP
 FROM sys_permission p
 WHERE p.permission_code IN (
     'engagement:view', 'engagement:edit',
-    'http-record:view', 'http-record:export', 'http-record:delete',
+    'http-record:view', 'http-record:export', 'http-record:delete', 'http-record:relay',
     'decision-log:view', 'mcp:view'
 )
 ON CONFLICT (role_id, permission_id) DO NOTHING;
