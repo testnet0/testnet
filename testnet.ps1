@@ -181,10 +181,14 @@ Function Load-EnvVars {
     if (Test-Path .env) {
         $lines = Get-Content .env
         $hasRedisPassword = $false
+        $hasMcpApiKey = $false
         
         foreach ($line in $lines) {
             if ($line -match "^REDIS_PASSWORD=(.+)") {
                 $hasRedisPassword = $true
+            }
+            if ($line -match "^TESTNET_MCP_API_KEY=(.+)") {
+                $hasMcpApiKey = $true
             }
             if ($line -match "^DOCKER_REGISTRY=(.*)") {
                 $env:DOCKER_REGISTRY = $matches[1].Trim().Trim('"').Trim("'")
@@ -202,6 +206,20 @@ Function Load-EnvVars {
             Write-Host "检测到 REDIS_PASSWORD 缺失，正在自动生成..." -ForegroundColor Yellow
             $newRedisPass = Generate-RandomString 32
             Add-Content -Path .env -Value "REDIS_PASSWORD=$newRedisPass"
+        }
+
+        # 补全 TESTNET_MCP_API_KEY
+        if (-not $hasMcpApiKey) {
+            Write-Host "检测到 TESTNET_MCP_API_KEY 缺失或为空，正在自动生成..." -ForegroundColor Yellow
+            $newMcpKey = Generate-RandomString 32
+            $content = Get-Content .env
+            if ($content -match "^TESTNET_MCP_API_KEY=") {
+                $content = $content -replace "^TESTNET_MCP_API_KEY=.*", "TESTNET_MCP_API_KEY=$newMcpKey"
+                Set-Content -Path .env -Value $content
+            } else {
+                Add-Content -Path .env -Value "TESTNET_MCP_API_KEY=$newMcpKey"
+            }
+            Write-Host "已成功生成并写入 TESTNET_MCP_API_KEY." -ForegroundColor Green
         }
 
         if ([string]::IsNullOrEmpty($env:DOCKER_REGISTRY)) {
@@ -382,7 +400,7 @@ switch ($action) {
                 "REDIS_PASSWORD=$(Generate-RandomString 32)",
                 "JWT_SECRET=$(Generate-RandomString 64)",
                 "TESTNET_CLIENT_SECRET=$(Generate-RandomString 32)",
-                "TESTNET_MCP_API_KEY=",
+                "TESTNET_MCP_API_KEY=$(Generate-RandomString 32)",
                 "ADMIN_INIT_PASSWORD=$adminPassword",
                 "DOCKER_REGISTRY=$selectedRegistry",
                 "CORS_ALLOWED_ORIGINS=*",
@@ -416,6 +434,16 @@ switch ($action) {
             if ($content -notmatch "TESTNET_NODE_NAME") {
                 $content += "TESTNET_NODE_NAME=$defaultNodeName"
                 Write-Host "Added TESTNET_NODE_NAME to .env ($defaultNodeName)." -ForegroundColor Green
+            }
+            # 补全 TESTNET_MCP_API_KEY
+            if ($content -notmatch "^TESTNET_MCP_API_KEY=(.+)") {
+                $newMcpKey = Generate-RandomString 32
+                if ($content -match "^TESTNET_MCP_API_KEY=") {
+                    $content = $content -replace "^TESTNET_MCP_API_KEY=.*", "TESTNET_MCP_API_KEY=$newMcpKey"
+                } else {
+                    $content += "TESTNET_MCP_API_KEY=$newMcpKey"
+                }
+                Write-Host "Added TESTNET_MCP_API_KEY to .env." -ForegroundColor Green
             }
             # 补全 ADMIN_INIT_PASSWORD
             if ($content -notmatch "ADMIN_INIT_PASSWORD") {

@@ -419,6 +419,22 @@ load_env_vars() {
             fi
         fi
 
+        # 自动补全/修复缺失或为空的 TESTNET_MCP_API_KEY (支持历史版本平滑升级与 MCP 自动就绪)
+        if ! grep -q "^TESTNET_MCP_API_KEY=" .env || grep -E -q "^TESTNET_MCP_API_KEY=[[:space:]]*['\"]?[[:space:]]*['\"]?[[:space:]]*$" .env; then
+            echo -e "${YELLOW}检测到 TESTNET_MCP_API_KEY 缺失或为空，正在为您自动生成...${NC}"
+            local new_mcp_key=$(generate_random_string)
+            if grep -q "^TESTNET_MCP_API_KEY=" .env; then
+                if [ "$OS_TYPE" == "Darwin" ]; then
+                    sed -i "" "s|^TESTNET_MCP_API_KEY=.*|TESTNET_MCP_API_KEY=$new_mcp_key|" .env
+                else
+                    sed -i "s|^TESTNET_MCP_API_KEY=.*|TESTNET_MCP_API_KEY=$new_mcp_key|" .env
+                fi
+            else
+                echo "TESTNET_MCP_API_KEY=$new_mcp_key" >> .env
+            fi
+            echo -e "${GREEN}已成功生成并写入 TESTNET_MCP_API_KEY.${NC}"
+        fi
+
         set -a
         source .env
         set +a
@@ -522,7 +538,7 @@ case "$1" in
             echo "REDIS_PASSWORD=$(generate_random_string)" >> .env
             echo "JWT_SECRET=$(generate_random_string)" >> .env
             echo "TESTNET_CLIENT_SECRET=$(generate_random_string)" >> .env
-            echo "TESTNET_MCP_API_KEY=" >> .env
+            echo "TESTNET_MCP_API_KEY=$(generate_random_string)" >> .env
             echo "ADMIN_INIT_PASSWORD=${ADMIN_PASSWORD}" >> .env
             echo "DOCKER_REGISTRY=$SELECTED_REGISTRY_URL" >> .env
             echo "CORS_ALLOWED_ORIGINS=*" >> .env
@@ -558,6 +574,19 @@ case "$1" in
                 DEFAULT_NODE_NAME="Node-$(hostname 2>/dev/null || echo 'Default')"
                 echo "TESTNET_NODE_NAME=${DEFAULT_NODE_NAME}" >> .env
                 echo -e "${GREEN}Added TESTNET_NODE_NAME to .env (${DEFAULT_NODE_NAME}).${NC}"
+            fi
+            if ! grep -q "^TESTNET_MCP_API_KEY=" .env || grep -E -q "^TESTNET_MCP_API_KEY=[[:space:]]*['\"]?[[:space:]]*['\"]?[[:space:]]*$" .env; then
+                NEW_MCP_KEY=$(generate_random_string)
+                if grep -q "^TESTNET_MCP_API_KEY" .env; then
+                    if [ "$OS_TYPE" == "Darwin" ]; then
+                        sed -i "" "s|^TESTNET_MCP_API_KEY=.*|TESTNET_MCP_API_KEY=$NEW_MCP_KEY|" .env
+                    else
+                        sed -i "s|^TESTNET_MCP_API_KEY=.*|TESTNET_MCP_API_KEY=$NEW_MCP_KEY|" .env
+                    fi
+                else
+                    echo "TESTNET_MCP_API_KEY=$NEW_MCP_KEY" >> .env
+                fi
+                echo -e "${GREEN}Added TESTNET_MCP_API_KEY to .env.${NC}"
             fi
             if ! grep -q "ADMIN_INIT_PASSWORD" .env; then
                 ADMIN_PASSWORD=$(generate_admin_password 16)

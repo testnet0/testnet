@@ -889,6 +889,7 @@ CREATE INDEX IF NOT EXISTS idx_testnet_asset_task_job ON testnet_asset_task (job
 CREATE INDEX IF NOT EXISTS idx_testnet_asset_task_run_id ON testnet_asset_task (run_id);
 CREATE INDEX IF NOT EXISTS idx_testnet_asset_task_status_create_time ON testnet_asset_task (task_status, create_time);
 CREATE INDEX IF NOT EXISTS idx_testnet_asset_task_client_id ON testnet_asset_task (client_id);
+CREATE INDEX IF NOT EXISTS idx_testnet_asset_task_client_status ON testnet_asset_task (client_id, task_status);
 CREATE INDEX IF NOT EXISTS idx_testnet_asset_task_timeout_at ON testnet_asset_task (task_status, timeout_at);
 CREATE INDEX IF NOT EXISTS idx_testnet_asset_task_retry ON testnet_asset_task (task_status, retry_count, max_retries, last_retry_time);
 CREATE INDEX IF NOT EXISTS idx_testnet_asset_task_parent_task ON testnet_asset_task (parent_task_id);
