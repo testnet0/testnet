@@ -8128,6 +8128,7 @@ CREATE TABLE IF NOT EXISTS testnet_engagement (
     started_at TIMESTAMP WITH TIME ZONE,
     ended_at TIMESTAMP WITH TIME ZONE,
     operator VARCHAR(64),
+    client_node_id VARCHAR(64),
     saturation_rationale TEXT,
     summary TEXT,
     create_by VARCHAR(64),
@@ -8140,6 +8141,31 @@ CREATE TABLE IF NOT EXISTS testnet_engagement (
 CREATE INDEX IF NOT EXISTS idx_engagement_project ON testnet_engagement(project_id);
 CREATE INDEX IF NOT EXISTS idx_engagement_status ON testnet_engagement(status);
 CREATE INDEX IF NOT EXISTS idx_engagement_started_at ON testnet_engagement(started_at);
+CREATE INDEX IF NOT EXISTS idx_engagement_client_node ON testnet_engagement(client_node_id);
+
+CREATE TABLE IF NOT EXISTS testnet_credential (
+    id VARCHAR(64) PRIMARY KEY,
+    project_id VARCHAR(64) NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    domain VARCHAR(256),
+    credential_type VARCHAR(32) NOT NULL DEFAULT 'COOKIE',
+    auth_headers TEXT,
+    cookie_string TEXT,
+    account VARCHAR(128),
+    password VARCHAR(256),
+    status VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
+    expire_time TIMESTAMP WITH TIME ZONE,
+    comment TEXT,
+    create_by VARCHAR(64),
+    create_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    update_by VARCHAR(64),
+    update_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_credential_project ON testnet_credential(project_id);
+CREATE INDEX IF NOT EXISTS idx_credential_domain ON testnet_credential(domain);
+CREATE INDEX IF NOT EXISTS idx_credential_status ON testnet_credential(status);
 
 CREATE TABLE IF NOT EXISTS testnet_http_record (
     id VARCHAR(64) PRIMARY KEY,
@@ -8160,6 +8186,7 @@ CREATE TABLE IF NOT EXISTS testnet_http_record (
     operator VARCHAR(64),
     store_raw BOOLEAN DEFAULT TRUE,
     error_message TEXT,
+    relay_node_id VARCHAR(64),
     create_by VARCHAR(64),
     create_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     update_by VARCHAR(64),
@@ -8171,6 +8198,7 @@ CREATE INDEX IF NOT EXISTS idx_http_record_project ON testnet_http_record(projec
 CREATE INDEX IF NOT EXISTS idx_http_record_engagement ON testnet_http_record(engagement_id);
 CREATE INDEX IF NOT EXISTS idx_http_record_asset ON testnet_http_record(asset_id);
 CREATE INDEX IF NOT EXISTS idx_http_record_sent_at ON testnet_http_record(sent_at);
+CREATE INDEX IF NOT EXISTS idx_http_record_relay_node ON testnet_http_record(relay_node_id);
 
 CREATE TABLE IF NOT EXISTS testnet_decision_log (
     id VARCHAR(64) PRIMARY KEY,
