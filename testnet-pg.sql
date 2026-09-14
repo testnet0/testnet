@@ -872,6 +872,7 @@ CREATE TABLE IF NOT EXISTS testnet_asset_task (
     parent_task_id varchar(64) DEFAULT NULL,
     session_id varchar(64) DEFAULT NULL,
     tool_name varchar(100) DEFAULT NULL,
+    tool_display_name varchar(100) DEFAULT NULL,
     target_value varchar(255) DEFAULT NULL,
     trace_id varchar(64) DEFAULT NULL,
     trigger_source varchar(64) DEFAULT NULL,
