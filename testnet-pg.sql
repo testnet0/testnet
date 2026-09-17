@@ -8213,6 +8213,12 @@ CREATE TABLE IF NOT EXISTS testnet_decision_log (
     action TEXT,
     new_leads TEXT,
     phase VARCHAR(32),
+    status VARCHAR(32) DEFAULT 'SUCCESS',
+    outcome TEXT,
+    done_when TEXT,
+    basis_ids TEXT,
+    evidence TEXT,
+    http_record_id VARCHAR(64),
     ts TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     author VARCHAR(64),
     create_by VARCHAR(64),
@@ -8227,6 +8233,8 @@ CREATE INDEX IF NOT EXISTS idx_decision_engagement ON testnet_decision_log(engag
 CREATE INDEX IF NOT EXISTS idx_decision_parent ON testnet_decision_log(parent_id);
 CREATE INDEX IF NOT EXISTS idx_decision_project ON testnet_decision_log(project_id);
 CREATE INDEX IF NOT EXISTS idx_decision_ts ON testnet_decision_log(ts);
+CREATE INDEX IF NOT EXISTS idx_decision_status ON testnet_decision_log(status);
+CREATE INDEX IF NOT EXISTS idx_decision_http_record ON testnet_decision_log(http_record_id);
 
 INSERT INTO sys_permission (id, permission_code, permission_name, resource_type, menu_id, status, create_by, create_time)
 VALUES
@@ -8246,7 +8254,7 @@ FROM sys_permission p
 WHERE p.permission_code IN (
     'engagement:view', 'engagement:edit',
     'http-record:view', 'http-record:export', 'http-record:delete', 'http-record:relay',
-    'decision-log:view', 'mcp:view'
+    'decision-log:view', 'mcp:view', 'mcp:execute'
 )
 ON CONFLICT (role_id, permission_id) DO NOTHING;
 
@@ -8258,6 +8266,8 @@ CREATE TABLE IF NOT EXISTS testnet_ai_memory (
     project_id VARCHAR(64),
     memory_key VARCHAR(64) NOT NULL DEFAULT 'general',
     title VARCHAR(128),
+    tags VARCHAR(255),
+    target VARCHAR(255),
     content TEXT NOT NULL,
     create_by VARCHAR(64),
     create_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -8268,6 +8278,7 @@ CREATE TABLE IF NOT EXISTS testnet_ai_memory (
 
 CREATE INDEX IF NOT EXISTS idx_ai_memory_project ON testnet_ai_memory(project_id);
 CREATE INDEX IF NOT EXISTS idx_ai_memory_key ON testnet_ai_memory(memory_key);
+CREATE INDEX IF NOT EXISTS idx_ai_memory_target ON testnet_ai_memory(target);
 CREATE UNIQUE INDEX IF NOT EXISTS uk_ai_memory_proj_key ON testnet_ai_memory(COALESCE(project_id, '__GLOBAL__'), memory_key) WHERE is_deleted = FALSE;
 
 -- RBAC Permissions for AI Memory
@@ -8281,6 +8292,44 @@ INSERT INTO sys_role_permission (id, role_id, permission_id, create_by, create_t
 SELECT '1-' || p.id, '1', p.id, 'system', CURRENT_TIMESTAMP
 FROM sys_permission p
 WHERE p.permission_code IN ('ai:memory:view', 'ai:memory:edit')
+ON CONFLICT (role_id, permission_id) DO NOTHING;
+
+-- ----------------------------
+-- Table structure for testnet_skill
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS testnet_skill (
+    id VARCHAR(64) PRIMARY KEY,
+    skill_key VARCHAR(64) NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    category VARCHAR(32) NOT NULL DEFAULT 'BASE',
+    description VARCHAR(512),
+    content TEXT NOT NULL,
+    is_builtin BOOLEAN NOT NULL DEFAULT FALSE,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    version VARCHAR(32) DEFAULT '1.0.0',
+    create_by VARCHAR(64),
+    create_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    update_by VARCHAR(64),
+    update_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_skill_key ON testnet_skill(skill_key) WHERE is_deleted = FALSE;
+CREATE INDEX IF NOT EXISTS idx_skill_category ON testnet_skill(category);
+CREATE INDEX IF NOT EXISTS idx_skill_enabled ON testnet_skill(enabled);
+
+-- RBAC Permissions for AI Skill
+INSERT INTO sys_permission (id, permission_code, permission_name, resource_type, menu_id, status, create_by, create_time)
+VALUES
+    ('perm-skill-001', 'skill:view', '查看技能库', 'MENU', 'menu-ai-skill', 'ACTIVE', 'system', CURRENT_TIMESTAMP),
+    ('perm-skill-002', 'skill:edit', '管理与编辑技能', 'BUTTON', 'menu-ai-skill', 'ACTIVE', 'system', CURRENT_TIMESTAMP)
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO sys_role_permission (id, role_id, permission_id, create_by, create_time)
+SELECT '1-' || p.id, '1', p.id, 'system', CURRENT_TIMESTAMP
+FROM sys_permission p
+WHERE p.permission_code IN ('skill:view', 'skill:edit')
 ON CONFLICT (role_id, permission_id) DO NOTHING;
 
 
