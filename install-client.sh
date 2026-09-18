@@ -347,7 +347,58 @@ download_and_extract() {
     fi
 
     echo -e "  ${GREEN}✓${NC} 可执行文件: ${INSTALL_DIR}/${BIN_NAME}"
+
+    # 将安装脚本自身固化保存到安装目录，支持后续以本地脚本执行管理
+    persist_script_and_symlinks
 }
+
+# ─── 固化脚本自身并创建全局快捷命令 ──────────────────────────────────────────
+persist_script_and_symlinks() {
+    local target_script="${INSTALL_DIR}/install-client.sh"
+    local raw_script_url="https://cnb.cool/testnet0/testnet-public/-/git/raw/main/install-client.sh"
+
+    # 如果当前脚本是一个实际存在的普通磁盘文件，直接拷贝
+    if [[ -f "$0" && ! "$0" =~ ^/dev/fd && ! "$0" =~ ^/proc/ ]]; then
+        cp -f "$0" "$target_script" 2>/dev/null || true
+    else
+        # 否则通过 curl/wget 将自身下载落盘保存
+        fetch_url "$raw_script_url" "$target_script" 2>/dev/null || true
+    fi
+
+    if [[ -f "$target_script" ]]; then
+        chmod +x "$target_script"
+        echo -e "  ${GREEN}✓${NC} 管理脚本已归档保存: ${target_script}"
+    fi
+
+    # 尝试在 PATH 目录注册全局快捷命令 testnet-client-ctl 与 testnet-client.sh
+    GLOBAL_CMD_REGISTERED=false
+    if [[ $EUID -eq 0 ]]; then
+        if mkdir -p /usr/local/bin 2>/dev/null; then
+            ln -sf "$target_script" /usr/local/bin/testnet-client-ctl 2>/dev/null && GLOBAL_CMD_REGISTERED=true
+            ln -sf "$target_script" /usr/local/bin/testnet-client.sh 2>/dev/null || true
+        fi
+    elif can_sudo; then
+        sudo mkdir -p /usr/local/bin 2>/dev/null || true
+        if sudo ln -sf "$target_script" /usr/local/bin/testnet-client-ctl 2>/dev/null; then
+            sudo ln -sf "$target_script" /usr/local/bin/testnet-client.sh 2>/dev/null || true
+            GLOBAL_CMD_REGISTERED=true
+        fi
+    else
+        # 普通用户尝试 ~/.local/bin
+        local user_bin="${HOME}/.local/bin"
+        if mkdir -p "$user_bin" 2>/dev/null; then
+            ln -sf "$target_script" "${user_bin}/testnet-client-ctl" 2>/dev/null || true
+            if [[ ":$PATH:" == *":$user_bin:"* ]]; then
+                GLOBAL_CMD_REGISTERED=true
+            fi
+        fi
+    fi
+
+    if [[ "$GLOBAL_CMD_REGISTERED" == "true" ]]; then
+        echo -e "  ${GREEN}✓${NC} 全局管理命令已注册: ${BOLD}testnet-client-ctl${NC} (可在任意目录直接运行)"
+    fi
+}
+
 
 # ─── 4. 生成或保留配置 ───────────────────────────────────────────────────────
 write_config() {
@@ -440,7 +491,7 @@ setup_systemd() {
 
         local service_content="[Unit]
 Description=TestNet Scanning Client Node
-Documentation=https://testnet.sh
+Documentation=https://testnet.shengkai.wang/
 After=network-online.target docker.service
 Wants=network-online.target
 
@@ -496,7 +547,7 @@ WantedBy=multi-user.target"
         cat > "$unit_file" <<EOF
 [Unit]
 Description=TestNet Scanning Client Node (User Service)
-Documentation=https://testnet.sh
+Documentation=https://testnet.shengkai.wang/
 After=network.target
 
 [Service]
@@ -700,12 +751,20 @@ cmd_uninstall() {
         sleep 1
     fi
 
-    # 3. 移除安装目录
+    # 3. 移除安装目录与全局软链接
     if [[ -d "$INSTALL_DIR" ]]; then
         echo -e "  - 移除安装目录: ${INSTALL_DIR}"
         rm -rf "$INSTALL_DIR"
         echo -e "  ${GREEN}✓${NC} 安装目录已删除"
     fi
+
+    # 清理快捷命令软链接
+    if [[ $EUID -eq 0 ]]; then
+        rm -f /usr/local/bin/testnet-client-ctl /usr/local/bin/testnet-client.sh 2>/dev/null || true
+    elif can_sudo; then
+        sudo rm -f /usr/local/bin/testnet-client-ctl /usr/local/bin/testnet-client.sh 2>/dev/null || true
+    fi
+    rm -f "${HOME}/.local/bin/testnet-client-ctl" 2>/dev/null || true
 
     # 4. 可选彻底清理持久化节点 ID 与缓存
     if [[ "$PURGE_DATA" == "true" ]]; then
@@ -746,12 +805,24 @@ main() {
             echo -e "  安装目录  : ${INSTALL_DIR}"
             echo -e "  版本架构  : ${VERSION} / ${ARCH_NAME}"
             echo ""
-            echo -e "  ${BOLD}常用管理命令 (任意目录执行):${NC}"
-            echo "    bash install-client.sh status    # 查看运行状态"
-            echo "    bash install-client.sh restart   # 重启探针"
-            echo "    bash install-client.sh stop      # 停止探针"
-            echo "    bash install-client.sh logs      # 查看实时日志"
-            echo "    bash install-client.sh uninstall # 卸载客户端"
+            echo ""
+            echo -e "  ${BOLD}常用管理命令:${NC}"
+            if [[ "${GLOBAL_CMD_REGISTERED:-false}" == "true" ]]; then
+                echo -e "    ${CYAN}testnet-client-ctl status${NC}    # 查看探针运行状态 (已支持全局执行)"
+                echo -e "    ${CYAN}testnet-client-ctl restart${NC}   # 重启探针"
+                echo -e "    ${CYAN}testnet-client-ctl stop${NC}      # 停止探针"
+                echo -e "    ${CYAN}testnet-client-ctl logs${NC}      # 查看实时日志"
+                echo -e "    ${CYAN}testnet-client-ctl uninstall${NC} # 卸载客户端"
+                echo ""
+                echo -e "  或者使用完整脚本路径执行:"
+                echo "    bash ${INSTALL_DIR}/install-client.sh status"
+            else
+                echo "    bash ${INSTALL_DIR}/install-client.sh status    # 查看运行状态"
+                echo "    bash ${INSTALL_DIR}/install-client.sh restart   # 重启探针"
+                echo "    bash ${INSTALL_DIR}/install-client.sh stop      # 停止探针"
+                echo "    bash ${INSTALL_DIR}/install-client.sh logs      # 查看实时日志"
+                echo "    bash ${INSTALL_DIR}/install-client.sh uninstall # 卸载客户端"
+            fi
             echo ""
             ;;
         uninstall)
