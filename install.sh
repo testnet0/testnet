@@ -12,6 +12,35 @@ NC='\033[0m'
 CNB_BASE_URL="https://cnb.cool/testnet0/testnet-public/-/git/raw/main"
 GITHUB_BASE_URL="https://raw.githubusercontent.com/testnet0/testnet/main"
 
+# 统一 HTTP 探测辅助: 输出目标 URL 的 HTTP 状态码 (探测失败输出 000)
+# 兼容 curl / wget 双环境, 两者都不存在时明确报错退出
+probe_url_status() {
+    local url="$1" status
+    if command -v curl >/dev/null 2>&1; then
+        status=$(curl -o /dev/null -s -w "%{http_code}" --connect-timeout 2 "$url") || status="000"
+    elif command -v wget >/dev/null 2>&1; then
+        wget --spider --timeout=2 --tries=1 "$url" >/dev/null 2>&1 && status="200" || status="000"
+    else
+        echo -e "${RED}Error: 系统缺少 curl 与 wget，请先安装其中之一 (如: apt-get install -y curl 或 yum install -y curl) 后重试。${NC}" >&2
+        exit 1
+    fi
+    echo "$status"
+}
+
+# 统一下载辅助: 将 URL 内容保存到指定文件
+# 兼容 curl / wget 双环境, 两者都不存在时明确报错退出
+fetch_url() {
+    local url="$1" output="$2"
+    if command -v curl >/dev/null 2>&1; then
+        curl -sSL --connect-timeout 5 -m 30 "$url" -o "$output"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -qO "$output" --timeout=10 -t 2 "$url"
+    else
+        echo -e "${RED}Error: 系统缺少 curl 与 wget，请先安装其中之一 (如: apt-get install -y curl 或 yum install -y curl) 后重试。${NC}" >&2
+        exit 1
+    fi
+}
+
 # 打印 Header
 print_header() {
     echo -e "${CYAN}"
@@ -29,7 +58,8 @@ print_header() {
 # 静默探测最快下载源
 detect_download_source() {
     echo -e "${CYAN}[1/3] 正在检测最快下载节点...${NC}"
-    local cnb_status=$(curl -o /dev/null -s -w "%{http_code}" --connect-timeout 2 "$CNB_BASE_URL/version.yml")
+    local cnb_status
+    cnb_status=$(probe_url_status "$CNB_BASE_URL/version.yml")
     if [ "$cnb_status" = "200" ]; then
         SELECTED_SOURCE="$CNB_BASE_URL"
         echo -e "${GREEN}[√] 已选择国内下载节点 (CNB)${NC}"
@@ -44,7 +74,14 @@ check_docker() {
     echo -e "\n${CYAN}[2/3] 正在检查 Docker 环境...${NC}"
     if ! command -v docker >/dev/null 2>&1; then
         echo -e "${YELLOW}未检测到 Docker，准备自动安装...${NC}"
-        curl -fsSL https://get.docker.com | bash -s docker
+        if command -v curl >/dev/null 2>&1; then
+            curl -fsSL https://get.docker.com | bash -s docker
+        elif command -v wget >/dev/null 2>&1; then
+            wget -qO- https://get.docker.com | bash -s docker
+        else
+            echo -e "${RED}Error: 系统缺少 curl 与 wget，无法自动安装 Docker，请先安装其中之一后重试。${NC}"
+            exit 1
+        fi
         if [ $? -ne 0 ]; then
             echo -e "${RED}Error: Docker 安装失败，请手动安装后重试。${NC}"
             exit 1
@@ -61,8 +98,8 @@ download_resources() {
     mkdir -p testnet-deploy && cd testnet-deploy
 
     echo -n -e "  - 拉取版本清单 (version.yml) ... "
-    curl -sSL "$SELECTED_SOURCE/version.yml" -o "version.yml"
-    if grep -qE "^\{|^<html>" "version.yml"; then
+    fetch_url "$SELECTED_SOURCE/version.yml" "version.yml"
+    if [ $? -ne 0 ] || grep -qE "^\{|^<html>" "version.yml"; then
         echo -e "${RED}失败 (远程文件不可达)${NC}"
         exit 1
     fi
@@ -86,7 +123,7 @@ download_resources() {
         fi
 
         echo -n -e "  - 拉取 $file ... "
-        curl -sSL "$SELECTED_SOURCE/$file" -o "$file"
+        fetch_url "$SELECTED_SOURCE/$file" "$file"
         if [ $? -ne 0 ] || grep -qE "^\{|^<html>" "$file"; then
             echo -e "${RED}失败${NC}"
             exit 1

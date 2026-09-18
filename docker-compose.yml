@@ -119,6 +119,12 @@ services:
     depends_on:
       testnet-server:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -kfs -o /dev/null https://127.0.0.1/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     deploy:
       resources:
         limits:
@@ -153,6 +159,12 @@ services:
     depends_on:
       testnet-server:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -x testnet-client || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     deploy:
       resources:
         limits:

@@ -6,7 +6,15 @@
 # 1. 确保工作目录始终为脚本所在目录 (支持从任意路径执行)
 cd "$(dirname "$(readlink -f "$0")")" || exit 1
 
-VERSION="v3.0.3" # 默认版本号
+# 版本号: 优先从同目录 version.yml 读取 (与部署清单保持一致), 读不到再回退默认值
+DEFAULT_VERSION="v3.0.4"
+VERSION="$DEFAULT_VERSION"
+if [ -f "version.yml" ]; then
+    local_version=$(grep -E "^version[:=]" version.yml | sed -E 's/^version[:=][[:space:]]*//' | tr -d '\r')
+    if [ -n "$local_version" ]; then
+        VERSION="$local_version"
+    fi
+fi
 VERSION_URL=""
 DOWNLOAD_BASE_URL=""
 SELECTED_REGISTRY_URL="testnet0/"

@@ -1389,6 +1389,7 @@ CREATE TABLE IF NOT EXISTS testnet_workflow_run (
     );
 CREATE INDEX IF NOT EXISTS idx_workflow_run_workflow_id ON testnet_workflow_run (workflow_id);
 CREATE INDEX IF NOT EXISTS idx_workflow_run_status ON testnet_workflow_run (status);
+CREATE INDEX IF NOT EXISTS idx_workflow_run_status_update_time ON testnet_workflow_run (status, update_time);
 CREATE INDEX IF NOT EXISTS idx_workflow_run_project_id ON testnet_workflow_run (project_id);
 
 DROP TABLE IF EXISTS testnet_workflow_node_run CASCADE;
