@@ -20,11 +20,14 @@ main:
           - /root/.cache/go-build:cow
       runner:
         cpus: 4
+      # secret.yaml 需包含 CNB_TOKEN: 个人访问令牌 (需有 TestNet-New 仓库读取权限), 覆盖内置的仓库级临时令牌
+      imports:
+        - https://cnb.cool/testnet0/secret/-/blob/main/secret.yaml
       stages:
         - name: 拉取客户端源码 (TestNet-New)
           script:
             - apk add --no-cache git
-            - git clone --depth 1 "https://${CNB_TOKEN_USER_NAME}:${CNB_TOKEN}@cnb.cool/${SOURCE_REPO}.git" /workspace/src
+            - git clone --depth 1 "https://cnb:${CNB_TOKEN}@cnb.cool/${SOURCE_REPO}.git" /workspace/src
             - git -C /workspace/src rev-parse --short HEAD > /workspace/src_commit.txt
         - name: 编译客户端二进制 (linux amd64/arm64)
           script:
