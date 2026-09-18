@@ -43,7 +43,7 @@ main:
                   && tar -czf testnet-client-linux-${ARCH}.tar.gz testnet-client-linux-${ARCH} configs/config.yaml
               done
               ls -lh testnet-client-linux-*.tar.gz
-            - mv testnet-client-linux-*.tar.gz /workspace/
+              mv testnet-client-linux-*.tar.gz /workspace/
         - name: 发布 Release (本仓库)
           type: git:release
           options:
