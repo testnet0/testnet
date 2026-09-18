@@ -29,9 +29,15 @@ VERSION="latest"
 INSTALL_SYSTEMD=true
 TLS_INSECURE=false
 
-INSTALL_DIR="/opt/testnet/client"
 BIN_NAME="testnet-client"
 SERVICE_NAME="testnet-client"
+
+# 安装目录: root 用 /opt/testnet/client，普通用户默认 ~/testnet-client (无需 sudo)
+if [[ $EUID -eq 0 ]]; then
+    INSTALL_DIR="/opt/testnet/client"
+else
+    INSTALL_DIR="${HOME}/testnet-client"
+fi
 
 CNB_RELEASE_BASE="https://cnb.cool/testnet0/testnet-public/-/releases/download"
 GITHUB_RELEASE_BASE="https://github.com/testnet0/testnet/releases/download"
@@ -74,11 +80,17 @@ parse_args() {
         esac
     done
 
-    [[ -z "$SERVER_URL" ]] && { echo -e "${RED}错误: 必须通过 -s/--server-url 指定服务端地址${NC}"; usage; exit 1; }
-    [[ -z "$CLIENT_SECRET" ]] && { echo -e "${RED}错误: 必须通过 -k/--secret 指定连接密码${NC}"; usage; exit 1; }
+    if [[ -z "$SERVER_URL" ]]; then
+        echo -e "${RED}错误: 必须通过 -s/--server-url 指定服务端地址${NC}"; usage; exit 1
+    fi
+    if [[ -z "$CLIENT_SECRET" ]]; then
+        echo -e "${RED}错误: 必须通过 -k/--secret 指定连接密码${NC}"; usage; exit 1
+    fi
 
     # 节点名称默认为主机名
-    [[ -z "$NODE_NAME" ]] && NODE_NAME=$(hostname -s 2>/dev/null || echo "node-$(date +%s)")
+    if [[ -z "$NODE_NAME" ]]; then
+        NODE_NAME=$(hostname -s 2>/dev/null || echo "node-$(date +%s)")
+    fi
 }
 
 # ─── Banner ──────────────────────────────────────────────────────────────────
@@ -158,23 +170,25 @@ check_system() {
 resolve_version_and_source() {
     echo -e "${CYAN}[2/5] 解析版本与下载节点...${NC}"
 
-    # 版本号处理：latest → 从 CNB 版本清单获取实际版本
+    # 版本号处理：latest → 从 CNB git raw 版本清单获取实际版本
     if [[ "$VERSION" == "latest" ]]; then
         echo -n "  - 获取最新版本号 ... "
-        local version_url="${CNB_RELEASE_BASE}/version.yml"
+        local version_url="https://cnb.cool/testnet0/testnet-public/-/git/raw/main/version.yml"
         local tmp_ver
         tmp_ver=$(mktemp)
         if fetch_url "$version_url" "$tmp_ver" 2>/dev/null && [[ -s "$tmp_ver" ]]; then
             local parsed
             parsed=$(grep -E "^version[:=]" "$tmp_ver" | sed -E 's/^version[:=][[:space:]]*//' | tr -d '\r' || true)
-            [[ -n "$parsed" ]] && VERSION="$parsed"
+            if [[ -n "$parsed" ]]; then VERSION="$parsed"; fi
         fi
         rm -f "$tmp_ver"
+        # 若远程获取失败则回退到内置默认版本
+        if [[ "$VERSION" == "latest" ]]; then VERSION="v3.0.4"; fi
         echo -e "${GREEN}${VERSION}${NC}"
     fi
 
     # 确保版本号有 v 前缀
-    [[ "$VERSION" != v* ]] && VERSION="v${VERSION}"
+    if [[ "$VERSION" != v* ]]; then VERSION="v${VERSION}"; fi
 
     TARBALL_NAME="testnet-client-linux-${ARCH_NAME}.tar.gz"
 
@@ -221,28 +235,27 @@ download_and_extract() {
     fi
 
     # 创建安装目录
-    if [[ $EUID -eq 0 ]]; then
-        mkdir -p "$INSTALL_DIR"
-    else
-        sudo mkdir -p "$INSTALL_DIR"
-    fi
+    mkdir -p "$INSTALL_DIR"
 
     echo -n "  - 解压到 ${INSTALL_DIR} ... "
-    if [[ $EUID -eq 0 ]]; then
-        tar -xzf "$tarball" -C "$INSTALL_DIR" --strip-components=0
-    else
-        sudo tar -xzf "$tarball" -C "$INSTALL_DIR" --strip-components=0
-    fi
+    tar -xzf "$tarball" -C "$INSTALL_DIR" --strip-components=0
     echo -e "${GREEN}成功${NC}"
 
-    # 赋予执行权限
-    if [[ $EUID -eq 0 ]]; then
-        chmod +x "${INSTALL_DIR}/${BIN_NAME}"
-    else
-        sudo chmod +x "${INSTALL_DIR}/${BIN_NAME}"
+    # 赋予执行权限（兼容打包时含架构名的二进制，如 testnet-client-linux-amd64）
+    local actual_bin
+    actual_bin=$(find "$INSTALL_DIR" -maxdepth 1 -type f -name "testnet-client*" ! -name "*.yaml" ! -name "*.yml" | head -1)
+    if [[ -z "$actual_bin" ]]; then
+        echo -e "${RED}错误: 解压后未找到可执行文件，请检查包内容${NC}"
+        exit 1
+    fi
+    chmod +x "$actual_bin"
+    # 如果文件名不是标准 testnet-client，创建标准名称软链接
+    if [[ "$(basename "$actual_bin")" != "$BIN_NAME" ]]; then
+        ln -sf "$actual_bin" "${INSTALL_DIR}/${BIN_NAME}"
     fi
 
-    echo -e "  ${GREEN}✓${NC} 二进制: ${INSTALL_DIR}/${BIN_NAME}"
+    echo -e "  ${GREEN}✓${NC} 二进制: ${actual_bin}"
+    echo -e "  ${GREEN}✓${NC} 启动入口: ${INSTALL_DIR}/${BIN_NAME}"
     echo -e "  ${GREEN}✓${NC} 配置模板: ${INSTALL_DIR}/configs/config.yaml"
 }
 
@@ -255,25 +268,21 @@ write_config() {
     local tls_insecure_str="false"
 
     # 自动判断是否启用 TLS
-    [[ "$SERVER_URL" == https://* ]] && tls_enabled="true"
-    [[ "$TLS_INSECURE" == "true" ]] && tls_insecure_str="true"
+    if [[ "$SERVER_URL" == https://* ]]; then tls_enabled="true"; fi
+    if [[ "$TLS_INSECURE" == "true" ]]; then tls_insecure_str="true"; fi
 
     # 如果配置文件已存在则备份
     if [[ -f "$config_path" ]]; then
         local backup="${config_path}.bak.$(date +%Y%m%d%H%M%S)"
         echo -e "  ${YELLOW}⚠${NC} 检测到已有配置文件，已备份至: ${backup}"
-        if [[ $EUID -eq 0 ]]; then
-            cp "$config_path" "$backup"
-        else
-            sudo cp "$config_path" "$backup"
-        fi
+        cp "$config_path" "$backup"
     fi
 
     local docker_enabled="false"
-    [[ "$DOCKER_AVAILABLE" == "true" ]] && docker_enabled="true"
+    if [[ "$DOCKER_AVAILABLE" == "true" ]]; then docker_enabled="true"; fi
 
-    # 写入配置（使用 tee 以支持 sudo 场景）
-    sudo tee "$config_path" >/dev/null <<EOF
+    # 写入配置
+    tee "$config_path" >/dev/null <<EOF
 # TestNet 扫描探针配置文件
 # 由 install-client.sh 自动生成于 $(date)
 # 修改后重启服务生效: sudo systemctl restart ${SERVICE_NAME}
