@@ -1,0 +1,55 @@
+# TestNet 客户端二进制发布流水线 (发布至本仓库 Release)
+# 触发: push 到 main 且本文件有变更 -> 修改 VERSION 或本文件即可(重)发布
+# 客户端源码位于 TestNet-New 仓库, 此处现场拉取编译
+
+.main_env: &main_env
+  VERSION: v3.0.4
+  SOURCE_REPO: testnet0/TestNet-New
+
+main:
+  push:
+    - name: Client-Release
+      ifModify:
+        - .cnb.yml
+      env:
+        <<: *main_env
+      docker:
+        image: golang:1.21-alpine
+        volumes:
+          - /go/pkg/mod:cow
+          - /root/.cache/go-build:cow
+      runner:
+        cpus: 4
+      stages:
+        - name: 拉取客户端源码 (TestNet-New)
+          script:
+            - apk add --no-cache git
+            - git clone --depth 1 "https://${CNB_TOKEN_USER_NAME}:${CNB_TOKEN}@cnb.cool/${SOURCE_REPO}.git" /workspace/src
+            - git -C /workspace/src rev-parse --short HEAD > /workspace/src_commit.txt
+        - name: 编译客户端二进制 (linux amd64/arm64)
+          script:
+            - cd /workspace/src/testnet-client
+            - export GOPROXY=https://goproxy.cn,direct
+            - |
+              COMMIT=$(cat /workspace/src_commit.txt)
+              for ARCH in amd64 arm64; do
+                GOOS=linux GOARCH=${ARCH} CGO_ENABLED=0 \
+                  go build -ldflags "-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                  -o testnet-client-linux-${ARCH} ./cmd \
+                  && tar -czf testnet-client-linux-${ARCH}.tar.gz testnet-client-linux-${ARCH} configs/config.yaml
+              done
+              ls -lh testnet-client-linux-*.tar.gz
+            - mv testnet-client-linux-*.tar.gz /workspace/
+        - name: 发布 Release (本仓库)
+          type: git:release
+          options:
+            tag: ${VERSION}
+            title: TestNet Client ${VERSION}
+            description: 客户端二进制发布 (linux amd64/arm64)，附件含默认配置文件，解压即可部署
+            latest: true
+        - name: 上传二进制附件
+          image: cnbcool/attachments:latest
+          settings:
+            tag: ${VERSION}
+            attachments:
+              - testnet-client-linux-*.tar.gz
