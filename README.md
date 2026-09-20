@@ -73,7 +73,7 @@ Encountered problems during installation or usage? Please check: [FAQ](https://t
 
 #### 1. Start Dependencies (PostgreSQL 16 & Redis 7)
 ```bash
-docker compose -f docker-compose-dev.yml up -d
+docker compose -f docker/docker-compose-dev.yml up -d
 ```
 
 #### 2. Start Backend (Spring Boot 3.4.3)

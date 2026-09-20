@@ -72,7 +72,7 @@ curl -fsSL https://cnb.cool/testnet0/testnet-public/-/git/raw/main/install.sh | 
 
 #### 1. 启动基础依赖 (PostgreSQL 16 & Redis 7)
 ```bash
-docker compose -f docker-compose-dev.yml up -d
+docker compose -f docker/docker-compose-dev.yml up -d
 ```
 
 #### 2. 启动后端 (Spring Boot 3.4.3)
